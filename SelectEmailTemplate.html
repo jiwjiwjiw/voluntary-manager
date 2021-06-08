@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+  </head>
+  <body>
+    <select name="templates" id="template-select" onchange="">
+        <? for (let index in templateNames) { ?>
+            <option value="<?= templateNames[index] ?>"><?= templateNames[index] ?></option>
+          <? } ?>
+    </select>
+  </body>
+</html>

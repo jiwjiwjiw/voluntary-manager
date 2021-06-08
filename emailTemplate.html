@@ -13,8 +13,8 @@
       Nous avons le plaisir de te confirmer ton engagement comme suit :
     </p>
     <ul>
-    <? for each (engagement in personne.engagements) { ?>
-      <li><?= engagement ?></li>
+    <? for (index in personne.engagements) { ?>
+      <li><?= personne.engagements[index] ?></li>
     <? } ?>
     </ul>
     <? if(personne.codes) { ?>
@@ -25,8 +25,8 @@
         Petite précision : sur la billetterie en ligne il faut faire une réservation séparée pour chaque code, sinon le système refusera la réservation.
       </p>
       <ul>
-      <? for each (code in personne.codes) { ?>
-        <li><?= code ?></li>
+      <? for (index in personne.codes) { ?>
+        <li><?= personne.codes[index] ?></li>
       <? } ?>
       </ul>
     <? } ?>

@@ -10,7 +10,7 @@ function loadMenu()
   ui.createMenu('Email')
     .addItem('Envoi emails', 'sendEmails')
     .addItem('Tester email', 'sendEmails')
-    .addItem('Envoyer email', 'sendEmails')
+    .addItem('Test', 'sendEmails2')
     .addToUi();
 }
 

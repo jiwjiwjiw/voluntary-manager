@@ -8,8 +8,8 @@
     <? if(report.nonEnvoyes.length) { ?>
       <p>Messages non envoyés aux destinataires suivants car ils n'ont pas d'engagement :</p>
       <ul>
-        <? for each (destinataire in report.nonEnvoyes) { ?>
-          <li><?= destinataire ?></li>
+        <? for (index in report.nonEnvoyes) { ?>
+          <li><?= report.nonEnvoyes[index] ?></li>
         <? } ?>  
       </ul>
     <? } ?>

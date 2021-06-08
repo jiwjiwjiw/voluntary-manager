@@ -1,3 +1,19 @@
+function sendEmails2() {
+  let templateList = new EmailTemplateList(SpreadsheetApp.getActive()).list
+  if (templateList.length == 0) {
+    SpreadsheetApp.getUi().alert("Aucun modèle de message défini!")
+  }
+  else {
+    let htmlTemplate = HtmlService.createTemplateFromFile('SelectEmailTemplate')
+    htmlTemplate.templateNames = templateList.map(x => x.getName())
+    let html = htmlTemplate
+      .evaluate()
+      .setWidth(250)
+      .setHeight(300)
+    SpreadsheetApp.getUi().showModalDialog(html, 'Choisir un modèle de courriel')
+  }
+}
+
 function sendEmails() {
   // get data from spreadsheet
   let classeur = SpreadsheetApp.getActive()
@@ -16,7 +32,7 @@ function sendEmails() {
   let contreparties = contrepartiesData.filter(rowHasContent)
   
   // check if there are mails to send
-    if(destinataires.length === 0) {
+  if(destinataires.length === 0) {
     SpreadsheetApp.getUi().alert("Aucun mail à envoyer!")
     return
   }
@@ -33,11 +49,11 @@ function sendEmails() {
   for(let d of destinataires) {
     let template = HtmlService.createTemplateFromFile('emailTemplate')
     let listeEngagements = engagements
-        .filter(rowHasValue(0, d[2]))
-        .map(getColumnAsRow(1))
+    .filter(rowHasValue(0, d[2]))
+    .map(getColumnAsRow(1))
     let listeContreparties = contreparties
-        .filter(rowHasValue(0, d[2]))
-        .map(getColumnAsRow(1))
+    .filter(rowHasValue(0, d[2]))
+    .map(getColumnAsRow(1))
     template.personne = {
       prenom: d[1],
       engagements: listeEngagements,
@@ -71,7 +87,7 @@ function sendEmails() {
     }
   }
   let statuts = personnesData
-    .map(getColumn(4))
+  .map(getColumn(4))
   statutsRange.setValues(statuts)
   
   // confirm mails are sent
