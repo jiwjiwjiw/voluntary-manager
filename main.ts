@@ -13,3 +13,10 @@ function loadMenu()
     .addItem('Envoyer email', 'sendEmails')
     .addToUi();
 }
+
+function test(){
+  let templateList = new EmailTemplateList(SpreadsheetApp.getActive()).list
+  for (const template of templateList) {
+    console.log(template.getName())
+  }
+}
