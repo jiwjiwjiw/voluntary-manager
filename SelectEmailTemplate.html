@@ -3,9 +3,17 @@
   <head>
     <base target="_top">
   </head>
+  <script>
+    function generateEmailTemplate() {
+      var name = document.getElementById('template-select').value;
+      google.script.run.generateEmailTemplate(name);
+      google.script.host.close();
+    }
+  </script>
   <body>
-    <select name="templates" id="template-select" onchange="">
-        <? for (let index in templateNames) { ?>
+    <select name="templates" id="template-select" onchange="generateEmailTemplate();">
+      <option value="undefined">- Choisir un modèle -</option>
+      <? for (let index in templateNames) { ?>
             <option value="<?= templateNames[index] ?>"><?= templateNames[index] ?></option>
           <? } ?>
     </select>

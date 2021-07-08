@@ -1,4 +1,4 @@
-function sendEmails2() {
+function selectEmailTemplate() {
   let templateList = new EmailTemplateList(SpreadsheetApp.getActive()).list
   if (templateList.length == 0) {
     SpreadsheetApp.getUi().alert("Aucun modèle de message défini!")
@@ -9,9 +9,13 @@ function sendEmails2() {
     let html = htmlTemplate
       .evaluate()
       .setWidth(250)
-      .setHeight(300)
+      .setHeight(40)
     SpreadsheetApp.getUi().showModalDialog(html, 'Choisir un modèle de courriel')
   }
+}
+
+function generateEmailTemplate(sheet:string) {
+  let template = new EmailTemplate(SpreadsheetApp.getActive().getSheetByName(sheet))
 }
 
 function sendEmails() {
