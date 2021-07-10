@@ -1,49 +1,87 @@
 class EmailTemplate {
-    private textEntries: Array<{type: string, richText: GoogleAppsScript.Spreadsheet.RichTextValue}>
+    private textEntries: Array<{type: string, richText: GoogleAppsScript.Spreadsheet.RichTextValue, condition: string}>
     private subject : string = ''
     private html : string = ''
 
     constructor(private sheet: GoogleAppsScript.Spreadsheet.Sheet) {
         this.textEntries = new Array
-        for (let index = 1; index < sheet.getLastRow(); index++) {
-            this.textEntries.push({type:sheet.getRange(index, 1).getValue(), richText:sheet.getRange(index, 2).getRichTextValue()})
+        for (let index = 2; index < sheet.getLastRow(); index++) {
+            this.textEntries.push({
+                type: sheet.getRange(index, 1).getValue(),
+                condition: sheet.getRange(index, 2).getValue(),
+                richText:sheet.getRange(index, 3).getRichTextValue()
+            })
         }
-        this.constructHtml()
-        console.log(this.subject)
-        console.log(this.html)
     }
 
-    private constructHtml() {
+    public constructHtml(data) {
+        let html = ''
+        let subject = ''
         let listContext = false
         for (const entry of this.textEntries) {
+            const conditionOk = this.evaluateCondition(entry.condition, data)
             switch (entry.type) {
                 case "sujet":
-                    this.subject = entry.richText.getText() // no rich text handling for subject
+                    subject = entry.richText.getText() // no rich text handling for subject
                     break;
                 case "paragraphe" :
-                    this.html += listContext ? '</ul>' : ''
+                    html += listContext ? '</ul>' : ''
                     listContext = false
-                    this.html += `<p>${this.richTextToHtml(entry.richText)}</p>`
+                    if (conditionOk) html += `<p>${this.richTextToHtml(entry.richText)}</p>`
                     break;
                 case "titre" :
-                    this.html += listContext ? '</ul>' : ''
+                    html += listContext ? '</ul>' : ''
                     listContext = false
-                    this.html += `<h1>${this.richTextToHtml(entry.richText)}</h1>`
+                    if (conditionOk) html += `<h1>${this.richTextToHtml(entry.richText)}</h1>`
                     break;
                 case "sous-titre" :
-                    this.html += listContext ? '</ul>' : ''
+                    html += listContext ? '</ul>' : ''
                     listContext = false
-                    this.html += `<h2>${this.richTextToHtml(entry.richText)}</h2>`
+                    if (conditionOk) html += `<h2>${this.richTextToHtml(entry.richText)}</h2>`
                     break;
                 case "élément de liste" :
-                    this.html += listContext ? '' : '<ul>'
-                    listContext = true
-                    this.html += `<li>${this.richTextToHtml(entry.richText)}</li>`
+                    if (conditionOk) {
+                        html += listContext ? '' : '<ul>'
+                        listContext = true
+                        html += `<li>${this.richTextToHtml(entry.richText)}</li>`                        
+                    }
                     break;
                 default:
                     break;
             }
         }
+        return {subject, html}
+    }
+
+    public insertData(html: string, data) {
+        html = html.replaceAll('%PRENOM%', data.personData.prenom)
+        html = html.replaceAll('%LISTE_ENGAGEMENTS%', data.listeEngagements.map(x => `<li>${x}</li>`).join(''))
+        html = html.replaceAll('%LISTE_CODES%', data.listeContreparties.map(x => `<li>${x}</li>`).join(''))
+        return html
+    }
+
+    private evaluateCondition(condition: string, data: any) {
+        let conditionOk = true
+        switch (condition) {
+            case 'a au moins un code':
+                conditionOk = data.listeContreparties.length > 0
+                break
+            case 'est artiste':
+                conditionOk = data.estArtiste
+                break
+            case 'est bénévole':
+                conditionOk = data.estBenevole
+                break
+            case 'est artiste et a au moins un code':
+                conditionOk = data.estArtiste && data.listeContreparties.length > 0
+                break
+            case 'est bénévole et a au moins un code':
+                conditionOk = data.estBenevole && data.listeContreparties.length > 0
+                break
+            default:
+                break
+        }
+        return conditionOk
     }
 
     private richTextToHtml(richText: GoogleAppsScript.Spreadsheet.RichTextValue) : string {

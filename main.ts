@@ -13,10 +13,3 @@ function loadMenu()
     .addItem('Envoi emails (new)', 'selectEmailTemplate')
     .addToUi();
 }
-
-function test(){
-  let templateList = new EmailTemplateList(SpreadsheetApp.getActive()).list
-  for (const template of templateList) {
-    console.log(template.getName())
-  }
-}

@@ -3,6 +3,9 @@ function selectEmailTemplate() {
   if (templateList.length == 0) {
     SpreadsheetApp.getUi().alert("Aucun modèle de message défini!")
   }
+  else if(templateList.length == 1) { 
+    generateEmailTemplate(templateList[0].getName())
+  }
   else {
     let htmlTemplate = HtmlService.createTemplateFromFile('SelectEmailTemplate')
     htmlTemplate.templateNames = templateList.map(x => x.getName())
@@ -15,7 +18,56 @@ function selectEmailTemplate() {
 }
 
 function generateEmailTemplate(sheet:string) {
-  let template = new EmailTemplate(SpreadsheetApp.getActive().getSheetByName(sheet))
+  const template = new EmailTemplate(SpreadsheetApp.getActive().getSheetByName(sheet))
+  const data = collectData()
+  for (const d of data) {
+    const {subject, html} = template.constructHtml(d)
+    console.log(html)
+    const html2 = template.insertData(html, d)
+    console.log(html2)
+  }
+}
+
+function collectData() {
+  // get data from spreadsheet
+  const classeur = SpreadsheetApp.getActive()
+  const personnesSheet = classeur.getSheetByName('personnes')
+  const engagementsSheet = classeur.getSheetByName('engagements')
+  const contrepartiesSheet = classeur.getSheetByName('contreparties')
+  const fonctionsSheet = classeur.getSheetByName('fonctions')
+  const personnesRange = personnesSheet.getRange('A2:F')
+  const statutsRange = personnesSheet.getRange('E2:E')
+  const engagementsRange = engagementsSheet.getRange('A2:B')
+  const contrepartiesRange = contrepartiesSheet.getRange('A2:B')
+  const fonctionsRange = fonctionsSheet.getRange('A2:B')
+  const personnesData = personnesRange.getValues()
+  const engagementsData = engagementsRange.getValues()
+  const contrepartiesData = contrepartiesRange.getValues()
+  const fonctionsData = fonctionsRange.getValues()
+  const destinataires = personnesData.filter(rowHasValue(4, 'à envoyer'))
+  const engagements = engagementsData.filter(rowHasContent)
+  const contreparties = contrepartiesData.filter(rowHasContent)
+  const fonctions = fonctionsData.filter(rowHasContent)
+  const fonctionsArtiste = fonctions.filter(rowHasValue(1, 'artiste')).map(getColumnAsRow(0))
+  const fonctionsBenevole = fonctions.filter(rowHasValue(1, 'bénévole')).map(getColumnAsRow(0))
+
+  let data = []
+  for (const d of destinataires) {
+    const listeEngagements = engagements.filter(rowHasValue(0, d[2])).map(getColumnAsRow(1))
+    const listeContreparties = contreparties.filter(rowHasValue(0, d[2])).map(getColumnAsRow(1))
+    data.push({
+      personData: {
+        nom: d[0],
+        prenom: d[1],
+        email: d[3]
+      },
+      listeEngagements: listeEngagements,
+      listeContreparties: listeContreparties,
+      estArtiste: fonctionsArtiste.some(x => listeEngagements.join(',').includes(`| ${x} |`)),
+      estBenevole: fonctionsBenevole.some(x => listeEngagements.join(',').includes(`| ${x} |`))
+    })
+  }
+  return data
 }
 
 function sendEmails() {

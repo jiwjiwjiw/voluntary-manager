@@ -1,27 +1,27 @@
-function rowHasContent(row: Array<String>) {
+function rowHasContent(row: Array<string>) {
     return row.join("").length > 0
 }
 
 function rowHasContentInColumn(index: number) {
-  return (row: Array<String>) => row[index].length > 0
+  return (row: Array<string>) => row[index].length > 0
 }
 
 function compareRowsOnColumn(index: number) {
-  return (a: Array<String>, b: Array<String>) => a[index] > b[index] ? 1 : -1
+  return (a: Array<string>, b: Array<string>) => a[index] > b[index] ? 1 : -1
 }
 
 function rowHasValue(index: number, value: string) {
-  return (row: Array<String>) => row[index] === value
+  return (row: Array<string>) => row[index] === value
 }
 
 function getColumnAsRow(index: number) {
-  return (row: Array<String>) => row[index]
+  return (row: Array<string>) => row[index]
 }
 
 function getColumn(index: number) {
-  return (row: Array<String>) => [row[index]]
+  return (row: Array<string>) => [row[index]]
 }
 
-function searchReplace(oldValue: String, newValue: String) {
-  return (row: Array<String>) => row.map(x => (x === oldValue) ? newValue : x)
+function searchReplace(oldValue: string, newValue: string) {
+  return (row: Array<string>) => row.map(x => (x === oldValue) ? newValue : x)
 }
