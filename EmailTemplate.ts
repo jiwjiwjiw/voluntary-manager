@@ -24,6 +24,11 @@ class EmailTemplate {
                 case "sujet":
                     subject = entry.richText.getText() // no rich text handling for subject
                     break;
+                case "aucun":
+                    html += listContext ? '</ul>' : ''
+                    listContext = false
+                    html += entry.richText.getText()
+                    break;
                 case "paragraphe" :
                     html += listContext ? '</ul>' : ''
                     listContext = false
@@ -55,8 +60,10 @@ class EmailTemplate {
 
     public insertData(html: string, data) {
         html = html.replaceAll('%PRENOM%', data.personData.prenom)
-        html = html.replaceAll('%LISTE_ENGAGEMENTS%', data.listeEngagements.map(x => `<li>${x}</li>`).join(''))
-        html = html.replaceAll('%LISTE_CODES%', data.listeContreparties.map(x => `<li>${x}</li>`).join(''))
+        html = html.replaceAll('%NOM%', data.personData.nom)
+        html = html.replaceAll('%EMAIL%', data.personData.email)
+        html = html.replaceAll('%LISTE_ENGAGEMENTS%', `<ul>${data.listeEngagements.map(x => `<li>${x}</li>`).join('')}</ul>`)
+        html = html.replaceAll('%LISTE_CODES%', `<ul>${data.listeContreparties.map(x => `<li>${x}</li>`).join('')}</ul>`)
         return html
     }
 
