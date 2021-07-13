@@ -1,11 +1,10 @@
-function updateSheets() {
+function onEdit() {
   updatePersonnes()
   updatePlages()
   updatePlanning()
 }
 
-function loadMenu() 
-{
+function onOpen() {
   let ui = SpreadsheetApp.getUi();
   ui.createMenu('Email')
     .addItem('Envoi emails', 'sendEmails')
