@@ -27,7 +27,7 @@ class EmailTemplate {
                 case "aucun":
                     html += listContext ? '</ul>' : ''
                     listContext = false
-                    html += entry.richText.getText()
+                    if (conditionOk) html += entry.richText.getText()
                     break;
                 case "paragraphe" :
                     html += listContext ? '</ul>' : ''
@@ -63,7 +63,7 @@ class EmailTemplate {
         html = html.replaceAll('%NOM%', data.personData.nom)
         html = html.replaceAll('%EMAIL%', data.personData.email)
         html = html.replaceAll('%LISTE_ENGAGEMENTS%', `<ul>${data.listeEngagements.map(x => `<li>${x}</li>`).join('')}</ul>`)
-        html = html.replaceAll('%LISTE_CODES%', `<ul>${data.listeContreparties.map(x => `<li>${x}</li>`).join('')}</ul>`)
+        html = html.replaceAll('%LISTE_CONTREPARTIES%', `<ul>${data.listeContreparties.map(x => `<li>${x}</li>`).join('')}</ul>`)
         return html
     }
 
