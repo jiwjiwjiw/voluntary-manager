@@ -17,8 +17,131 @@ function selectEmailTemplate() {
   }
 }
 
+function testEmail() {
+  const dataSheetName = 'modèle courriel'
+  const dataSheet = SpreadsheetApp.getActive().getSheetByName(dataSheetName)
+  if(!dataSheet) {
+    SpreadsheetApp.getUi().alert(`Tentative d'accès à la feuille inexistante "${dataSheetName}"`)
+    return
+  } 
+  const template = new EmailTemplate(dataSheet)
+  const ownEmail = Session.getActiveUser().getEmail()
+  const data = [
+    {
+      personData: {
+        nom: 'TEST',
+        prenom: 'ArtisteSansContrepartie',
+        email: ownEmail
+      },
+      listeEngagements: [
+          '01.01.2021 | test | 20:00-21:00',
+          '02.01.2021 | test | 20:00-21:00',
+          '03.01.2021 | test | 20:00-21:00',
+        ],
+      listeContreparties: [],
+      estArtiste: true,
+      estBenevole: false
+    },
+    {
+      personData: {
+        nom: 'TEST',
+        prenom: 'BenevoleSansContrepartie',
+        email: ownEmail
+      },
+      listeEngagements: [
+          '01.01.2021 | test | 20:00-21:00',
+          '02.01.2021 | test | 20:00-21:00',
+          '03.01.2021 | test | 20:00-21:00',
+        ],
+      listeContreparties: [],
+      estArtiste: false,
+      estBenevole: true
+    },
+    {
+      personData: {
+        nom: 'TEST',
+        prenom: 'ArtisteEtBenevoleSansContrepartie',
+        email: ownEmail
+      },
+      listeEngagements: [
+          '01.01.2021 | test | 20:00-21:00',
+          '02.01.2021 | test | 20:00-21:00',
+          '03.01.2021 | test | 20:00-21:00',
+        ],
+      listeContreparties: [],
+      estArtiste: true,
+      estBenevole: true
+    },
+    {
+      personData: {
+        nom: 'TEST',
+        prenom: 'ArtisteAvecContrepartie',
+        email: ownEmail
+      },
+      listeEngagements: [
+          '01.01.2021 | test | 20:00-21:00',
+          '02.01.2021 | test | 20:00-21:00',
+          '03.01.2021 | test | 20:00-21:00',
+        ],
+      listeContreparties: [
+        'contrepartie 1',
+        'contrepartie 2',
+      ],
+      estArtiste: true,
+      estBenevole: false
+    },
+    {
+      personData: {
+        nom: 'TEST',
+        prenom: 'BenevoleAvecContrepartie',
+        email: ownEmail
+      },
+      listeEngagements: [
+          '01.01.2021 | test | 20:00-21:00',
+          '02.01.2021 | test | 20:00-21:00',
+          '03.01.2021 | test | 20:00-21:00',
+        ],
+      listeContreparties: [
+        'contrepartie 1',
+        'contrepartie 2',
+      ],
+      estArtiste: false,
+      estBenevole: true
+    },
+    {
+      personData: {
+        nom: 'TEST',
+        prenom: 'ArtisteEtBenevoleAvecContrepartie',
+        email: ownEmail
+      },
+      listeEngagements: [
+          '01.01.2021 | test | 20:00-21:00',
+          '02.01.2021 | test | 20:00-21:00',
+          '03.01.2021 | test | 20:00-21:00',
+        ],
+      listeContreparties: [
+        'contrepartie 1',
+        'contrepartie 2',
+      ],
+      estArtiste: true,
+      estBenevole: true
+    },
+  ]
+  sendEmails2(template, data)
+}
+
 function sendEmails(sheet:string) {
+  const dataSheet = SpreadsheetApp.getActive().getSheetByName(sheet)
+  if(!dataSheet) {
+    SpreadsheetApp.getUi().alert(`Tentative d'accès à la feuille inexistante "${sheet}"`)
+    return
+  } 
+  const template = new EmailTemplate(dataSheet)
   const data = collectData()
+  sendEmails2(template, data)
+}
+
+function sendEmails2(template: EmailTemplate, data: any) {
   // check if there are mails to send
   if(data.length === 0) {
     SpreadsheetApp.getUi().alert("Aucun mail à envoyer!")
@@ -31,7 +154,6 @@ function sendEmails(sheet:string) {
     return
   }
 
-  const template = new EmailTemplate(SpreadsheetApp.getActive().getSheetByName(sheet))
   let destinatairesSansEngagements = []
   let mailsEnvoyes = 0
   for (const d of data) {
@@ -117,5 +239,4 @@ function UpdateSendStatus(nom: string, prenom: string, status: string) {
   personnesSheet
     .getRange(index + 2 , 5 ,1 ,1) // increment index by 2, to take into account the different indexing (0-based for findIndex, 1-based for getRange) and the headings not included in personneRange
     .setValue(status)
-}
-
+}  
