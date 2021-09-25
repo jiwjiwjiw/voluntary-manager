@@ -1,3 +1,31 @@
-function rangeIntersect(r1: Range, r2: Range): boolean {
+function rangeIntersect(r1: GoogleAppsScript.Spreadsheet.Range, r2: GoogleAppsScript.Spreadsheet.Range): boolean {
     return (r1.getLastRow() >= r2.getRow()) && (r2.getLastRow() >= r1.getRow()) && (r1.getLastColumn() >= r2.getColumn()) && (r2.getLastColumn() >= r1.getColumn());
+}
+
+function rowHasContent(row: Array<string>) {
+    return row.join("").length > 0
+}
+
+function rowHasContentInColumn(index: number) {
+  return (row: Array<string>) => row[index].length > 0
+}
+
+function compareRowsOnColumn(index: number) {
+  return (a: Array<string>, b: Array<string>) => a[index] > b[index] ? 1 : -1
+}
+
+function rowHasValue(index: number, value: string) {
+  return (row: Array<string>) => row[index] === value
+}
+
+function getColumnAsRow(index: number) {
+  return (row: Array<string>) => row[index]
+}
+
+function getColumn(index: number) {
+  return (row: Array<string>) => [row[index]]
+}
+
+function searchReplace(oldValue: string, newValue: string) {
+  return (row: Array<string>) => row.map(x => (x === oldValue) ? newValue : x)
 }

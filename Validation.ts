@@ -11,20 +11,19 @@ class Validation {
         this.validatingRangeName = validatingRangeName
     }
 
-    update(modifiedRange: Range) : void {
-        if(true)
-        {
-            const validatedSheet = SpreadsheetApp.getActive().getSheetByName(this.validatedSheetName)
-            if(!validatedSheet) {
+    update(modifiedRange: GoogleAppsScript.Spreadsheet.Range): void {
+        const validatedSheet = SpreadsheetApp.getActive().getSheetByName(this.validatedSheetName)
+        if (!validatedSheet) {
             SpreadsheetApp.getUi().alert(`Tentative d'accès à la feuille inexistante "${this.validatedSheetName}"`)
             return
-            } 
+        }
+        let validatedRange = validatedSheet.getRange(this.validatedRangeName)
+        if (rangeIntersect(modifiedRange, validatedRange)) {
             const validationSheet = SpreadsheetApp.getActive().getSheetByName(this.validatingSheetName)
-            if(!validationSheet) {
-            SpreadsheetApp.getUi().alert(`Tentative d'accès à la feuille inexistante "${this.validatingSheetName}"`)
-            return
-            } 
-            let validatedRange = validatedSheet.getRange(this.validatedRangeName)
+            if (!validationSheet) {
+                SpreadsheetApp.getUi().alert(`Tentative d'accès à la feuille inexistante "${this.validatingSheetName}"`)
+                return
+            }
             const validatingRange = validationSheet.getRange(this.validatingRangeName)
             let rules = SpreadsheetApp.newDataValidation()
                 .setAllowInvalid(false)
