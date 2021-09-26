@@ -1,9 +1,11 @@
 function rangeIntersect(r1: GoogleAppsScript.Spreadsheet.Range, r2: GoogleAppsScript.Spreadsheet.Range): boolean {
-    return (r1.getLastRow() >= r2.getRow()) && (r2.getLastRow() >= r1.getRow()) && (r1.getLastColumn() >= r2.getColumn()) && (r2.getLastColumn() >= r1.getColumn());
+  let sheetMatches = r1.getSheet().getName() == r2.getSheet().getName()
+  let rangeIntersects = (r1.getLastRow() >= r2.getRow()) && (r2.getLastRow() >= r1.getRow()) && (r1.getLastColumn() >= r2.getColumn()) && (r2.getLastColumn() >= r1.getColumn());
+  return sheetMatches && rangeIntersects
 }
 
 function rowHasContent(row: Array<string>) {
-    return row.join("").length > 0
+  return row.join("").length > 0
 }
 
 function rowHasContentInColumn(index: number) {

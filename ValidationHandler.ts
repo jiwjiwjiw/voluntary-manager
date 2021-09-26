@@ -1,5 +1,5 @@
 class ValidationHandler {
-    validations: Validation[]
+    validations: Validation[] = []
 
     add(validation: Validation) {
         this.validations.push(validation)
