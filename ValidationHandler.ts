@@ -5,7 +5,7 @@ class ValidationHandler {
         this.validations.push(validation)
     }
 
-    update(modifiedRange: GoogleAppsScript.Spreadsheet.Range) : void {
+    update(modifiedRange: GoogleAppsScript.Spreadsheet.Range = undefined) : void {
         for(let validation of this.validations) {
             validation.update(modifiedRange)
         }

@@ -1,6 +1,6 @@
 class Task {
     constructor(
-        private assignee: string,
+        private assignee: Person,
         private description: string,
         private dueDate: Date
     ) {
