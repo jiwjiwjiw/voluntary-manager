@@ -1,4 +1,6 @@
 class Meeting {
+private topics: Topic[] = []
+
     constructor(
         readonly date: Date,
         readonly subject: string,
@@ -7,5 +9,9 @@ class Meeting {
         readonly attending: Person[],
         readonly excused: Person[],
         readonly missing: Person[] ) {
-    } 
+    }
+
+    addTopic(topic: Topic): void {
+        this.topics.push(topic)
+    }
 }
