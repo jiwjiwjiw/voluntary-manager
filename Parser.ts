@@ -1,14 +1,26 @@
 class Parser {
-    public topics: Topic[] = []
-    public people: Person[] = []
-    public meetings: Meeting[] = []
-    public tasks: Task[] = []
+    private _topics: Topic[] = []
+    public get topics(): Topic[] {
+        return this._topics
+    }
+    private _people: Person[] = []
+    public get people(): Person[] {
+        return this._people
+    }
+    private _meetings: Meeting[] = []
+    public get meetings(): Meeting[] {
+        return this._meetings
+    }
+    private _tasks: Task[] = []
+    public get tasks(): Task[] {
+        return this._tasks
+    }
 
     parse(): void {
-        this.topics = []
-        this.people = []
-        this.meetings = []
-        this.tasks = []
+        this._topics = []
+        this._people = []
+        this._meetings = []
+        this._tasks = []
         const peopleSheetValues = SpreadsheetApp.getActive().getSheetByName('Personnes').getDataRange().getValues()
         peopleSheetValues.shift(); // shift removes first line that contains headings
         peopleSheetValues.forEach(row => this.people.push(new Person(row[0], row[1], row[2])))
@@ -41,8 +53,8 @@ class Parser {
         const topicsSheetValues = SpreadsheetApp.getActive().getSheetByName('Sujets').getDataRange().getValues()
         topicsSheetValues.shift(); // shift removes first line that contains headings
         topicsSheetValues.forEach(row => {
-            let meeting = this.meetings.find(x => x.date === row[1])
-            const author = this.people.find(x => x.acronym === row[2])
+            let meeting = this.meetings.find(x => x.date === row[0])
+            const author = this.people.find(x => x.acronym === row[1])
             let tasks: Task[] = []
             row[7].trim().split('\n').forEach(task => {
                 let t = task.trim().split(':').map(s => s.trim())
@@ -51,8 +63,8 @@ class Parser {
             })
             const topic = new Topic(row[0], meeting, author, row[3], row[4], row[5], row[6], tasks)
             this.topics.push(topic)
-            meeting.addTopic(topic)
-            this.tasks = this.tasks.concat(tasks)
+            if(meeting) meeting.addTopic(topic)
+            this._tasks = this.tasks.concat(tasks)
         })
     }
 }
