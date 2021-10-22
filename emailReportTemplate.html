@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+  </head>
+  <body>
+    <p> <?= report.envoyes ?> mail<?= (report.envoyes > 1) ? 's' : '' ?> envoyé<?= (report.envoyes > 1) ? 's' : '' ?></p>
+    <? if(report.nonEnvoyes.length) { ?>
+      <p>Messages non envoyés aux destinataires suivants car ils n'ont pas d'engagement :</p>
+      <ul>
+        <? for (index in report.nonEnvoyes) { ?>
+          <li><?= report.nonEnvoyes[index] ?></li>
+        <? } ?>  
+      </ul>
+    <? } ?>
+    </body>
+</html>
