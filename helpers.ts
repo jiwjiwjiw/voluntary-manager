@@ -1,4 +1,4 @@
-function rowHasContent(row: Array<string>) {
+function rowHasContent(row: Array<string>): boolean {
     return row.join("").length > 0
 }
 
