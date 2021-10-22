@@ -196,7 +196,7 @@ function collectData() {
   const engagementsData = engagementsRange.getValues()
   const engagements = engagementsData.filter(rowHasContent)
   const contrepartiesSheet = classeur.getSheetByName('contreparties')
-  const contrepartiesRange = contrepartiesSheet.getRange('A2:B')
+  const contrepartiesRange = contrepartiesSheet.getRange('A2:C')
   const contrepartiesData = contrepartiesRange.getValues()
   const contreparties = contrepartiesData.filter(rowHasContent)
   const fonctionsSheet = classeur.getSheetByName('fonctions')
@@ -205,12 +205,13 @@ function collectData() {
   const fonctions = fonctionsData.filter(rowHasContent)
   const fonctionsArtiste = fonctions.filter(rowHasValue(1, 'artiste')).map(getColumnAsRow(0))
   const fonctionsBenevole = fonctions.filter(rowHasValue(1, 'bénévole')).map(getColumnAsRow(0))
-  const statutsRange = personnesSheet.getRange('E2:E')
 
   let data = []
   for (const d of destinataires) {
     const listeEngagements = engagements.filter(rowHasValue(0, d[2])).map(getColumnAsRow(1))
-    const listeContreparties = contreparties.filter(rowHasValue(0, d[2])).map(getColumnAsRow(1))
+    const listeContreparties = contreparties
+      .filter(rowHasValue(0, d[2]))
+      .map(row => row[2] !== '' ? `${row[1]} (${row[2]})` : row [1])
     data.push({
       personData: {
         nom: d[0],
