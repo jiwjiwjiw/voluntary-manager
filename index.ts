@@ -73,18 +73,19 @@ function onGenerateMeetingMinutes() {
   fileToEdit.saveAndClose()
   let docblob = fileToEdit.getAs('application/pdf')
   let pdfFile: GoogleAppsScript.Drive.File
-  if(destinationFolder.getFilesByName(fileName).hasNext()) {
-    pdfFile = destinationFolder.getFilesByName(fileName).next()
+  let queryString = `title = '${fileName}.pdf' and mimeType = 'application/pdf'`
+  if(destinationFolder.searchFiles(queryString).hasNext()) {
+    pdfFile = destinationFolder.searchFiles(queryString).next()
     Drive.Files.update({
-      title: pdfFile.getName(), mimeType: pdfFile.getMimeType()
+      title: fileName, mimeType: 'application/pdf'
     }, pdfFile.getId(), docblob);
   } else {
-    pdfFile = destinationFolder.createFile(docblob)
+    pdfFile = destinationFolder.createFile(docblob) 
   }
 
-    // add link to new document in spreadsheet
-    const documentUrl = `https://docs.google.com/document/d/${pdfFile.getId()}/edit`
-    SpreadsheetApp.getActiveSheet().getRange('H' + currentRow).setValue(documentUrl)
+  // add link to new document in spreadsheet
+  const documentUrl = `https://docs.google.com/document/d/${pdfFile.getId()}/edit`
+  SpreadsheetApp.getActiveSheet().getRange('H' + currentRow).setValue(documentUrl)
 
   // delete doc file
   newFile.setTrashed(true)
