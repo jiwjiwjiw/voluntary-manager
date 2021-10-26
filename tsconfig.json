@@ -1,8 +1,14 @@
+<<<<<<< HEAD
     {
     "compilerOptions": {
         "lib": [
             "esnext"
         ],
+=======
+{
+    "compilerOptions": {
+        "lib": ["esnext"],
+>>>>>>> e2465dcfaeef62b48decadfc9349827ed3fbcc1c
         "experimentalDecorators": true,
         "target": "ES2019"
     }
