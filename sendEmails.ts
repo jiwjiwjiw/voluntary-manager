@@ -18,13 +18,7 @@ function selectEmailTemplate() {
   }
   
   function testEmail() {
-    const dataSheetName = 'modèle courriel'
-    const dataSheet = SpreadsheetApp.getActive().getSheetByName(dataSheetName)
-    if(!dataSheet) {
-      SpreadsheetApp.getUi().alert(`Tentative d'accès à la feuille inexistante "${dataSheetName}"`)
-      return
-    } 
-    const template = new EmailTemplate(dataSheet)
+    const template = new EmailTemplate(new ConfirmationEmailTemplateParams)
     const ownEmail = Session.getActiveUser().getEmail()
     const data = [
       {
@@ -84,8 +78,8 @@ function selectEmailTemplate() {
             '03.01.2021 | test | 20:00-21:00',
           ],
         listeContreparties: [
-          'contrepartie 1',
-          'contrepartie 2',
+          'contrepartie 1 (valable uniquement le premier weekend)',
+          'contrepartie 2 (valable uniquement le premier weekend)',
         ],
         estArtiste: true,
         estBenevole: false
@@ -102,8 +96,8 @@ function selectEmailTemplate() {
             '03.01.2021 | test | 20:00-21:00',
           ],
         listeContreparties: [
-          'contrepartie 1',
-          'contrepartie 2',
+          "contrepartie 1 (valable pour n'importe quelle représentation)",
+          "contrepartie 2 (valable pour n'importe quelle représentation)",
         ],
         estArtiste: false,
         estBenevole: true
@@ -120,8 +114,8 @@ function selectEmailTemplate() {
             '03.01.2021 | test | 20:00-21:00',
           ],
         listeContreparties: [
-          'contrepartie 1',
-          'contrepartie 2',
+          "contrepartie 1 (valable pour n'importe quelle représentation)",
+          'contrepartie 2 (valable uniquement le premier weekend)',
         ],
         estArtiste: true,
         estBenevole: true
@@ -131,12 +125,7 @@ function selectEmailTemplate() {
   }
   
   function sendEmails(sheet:string) {
-    const dataSheet = SpreadsheetApp.getActive().getSheetByName(sheet)
-    if(!dataSheet) {
-      SpreadsheetApp.getUi().alert(`Tentative d'accès à la feuille inexistante "${sheet}"`)
-      return
-    } 
-    const template = new EmailTemplate(dataSheet)
+    const template = new EmailTemplate(new ConfirmationEmailTemplateParams)
     const data = collectData()
     sendEmails2(template, data)
   }

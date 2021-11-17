@@ -1,10 +1,11 @@
 function updateValidation(modifiedRange: GoogleAppsScript.Spreadsheet.Range = undefined) {
-  let validationHandler = new ValidationHandler
+  let validationHandler = ValidationHandler.getInstance()
   validationHandler.add(new Validation('contreparties', 'A2:A', 'personnes', 'C2:C'))
   validationHandler.add(new Validation('plages', 'A2:A', 'dates', 'A2:A'))
   validationHandler.add(new Validation('plages', 'B2:B', 'fonctions', 'A2:A'))
   validationHandler.add(new Validation('engagements', 'A2:A', 'personnes', 'C2:C'))
   validationHandler.add(new Validation('engagements', 'B2:B', 'plages', 'F2:F'))
+  new EmailTemplate(new ConfirmationEmailTemplateParams).addValidation()
   validationHandler.update(modifiedRange)
 }
 
