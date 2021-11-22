@@ -5,6 +5,8 @@ function updateValidation(modifiedRange: GoogleAppsScript.Spreadsheet.Range = un
   validationHandler.add(new Validation('plages', 'B2:B', 'fonctions', 'A2:A'))
   validationHandler.add(new Validation('engagements', 'A2:A', 'personnes', 'C2:C'))
   validationHandler.add(new Validation('engagements', 'B2:B', 'plages', 'F2:F'))
+  validationHandler.add(new Validation('fonctions', 'B2:B', '', '', false, ['artiste', 'bénévole']))
+  validationHandler.add(new Validation('personnes', 'E2:E', '', '', false, ['à envoyer', 'envoyé', 'réception confirmée']))
   new EmailTemplate(new ConfirmationEmailTemplateParams).addValidation()
   validationHandler.update(modifiedRange)
 }
