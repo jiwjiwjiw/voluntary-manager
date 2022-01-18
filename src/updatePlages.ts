@@ -1,9 +1,9 @@
-function updatePlages() {
+export function updatePlages () {
   let plagesSheet = SpreadsheetApp.getActive().getSheetByName('plages')
-  let plagesRange = plagesSheet.getRange('A2:F')
-  let plagesData = plagesRange.getValues()
-  let output = plagesData.map(x => {
-    let texte = ""
+  let plagesRange = plagesSheet?.getRange('A2:F')
+  let plagesData = plagesRange?.getValues()
+  let output = plagesData?.map(x => {
+    let texte = ''
     if (x[0]) {
       texte += x[0] + ' | '
     }
@@ -18,6 +18,8 @@ function updatePlages() {
     }
     return [texte]
   })
-  let outputRange = plagesSheet.getRange('F2:F')
-  outputRange.setValues(output)
+  if (output) {
+    let outputRange = plagesSheet?.getRange('F2:F')
+    outputRange?.setValues(output)
+  }
 }
