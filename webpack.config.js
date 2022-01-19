@@ -28,7 +28,7 @@ const config = {
     new CopyPlugin({
       patterns: [
         {
-          from: 'src/*.html',
+          from: 'src/**/*.html',
           to: '[name][ext]'
         }
       ]
