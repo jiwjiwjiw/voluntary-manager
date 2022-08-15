@@ -7,9 +7,10 @@ import { updatePlages } from './updatePlages'
 import { updatePlanning } from './updatePlanning'
 import { testEmail, selectEmailTemplate } from './sendEmails'
 ;(global as any).onOpen = onOpen
-;(global as any).onEdit = onEdit
 ;(global as any).testEmail = testEmail
 ;(global as any).selectEmailTemplate = selectEmailTemplate
+;(global as any).onAuthorizeScript = onAuthorizeScript
+;(global as any).updateModels = updateModels
 
 function updateValidation (
   modifiedRange: GoogleAppsScript.Spreadsheet.Range | undefined = undefined
@@ -38,18 +39,67 @@ function updateValidation (
   validationHandler.update(modifiedRange)
 }
 
-function onEdit (e: any) {
+function onOpen () {
+  let ui = SpreadsheetApp.getUi()
+  ui.createMenu('Actions')
+    .addItem('Autoriser le script', 'onAuthorizeScript')
+    .addItem('Envoyer les emails', 'selectEmailTemplate')
+    .addItem('Tester les emails', 'testEmail')
+    .addToUi()
+}
+
+function updateModels () {
   updatePersonnes()
   updatePlages()
   updatePlanning()
-  updateValidation(e.range)
+  updateValidation()
 }
 
-function onOpen () {
-  updateValidation()
-  let ui = SpreadsheetApp.getUi()
-  ui.createMenu('Email')
-    .addItem('Envoi emails', 'selectEmailTemplate')
-    .addItem('Test email', 'testEmail')
-    .addToUi()
+function onAuthorizeScript () {
+  installOnOpenTriggerIfInexisting()
+  installOnEditTriggerIfInexisting()
+  installOnChangeTriggerIfInexisting()
+}
+
+function installOnEditTriggerIfInexisting () {
+  if (!checkIfTriggerExists(ScriptApp.EventType.ON_EDIT, 'updateModels')) {
+    ScriptApp.newTrigger('updateModels')
+      .forSpreadsheet(SpreadsheetApp.getActive())
+      .onEdit()
+      .create()
+  }
+}
+
+function installOnOpenTriggerIfInexisting () {
+  if (!checkIfTriggerExists(ScriptApp.EventType.ON_OPEN, 'updateModels')) {
+    ScriptApp.newTrigger('updateModels')
+      .forSpreadsheet(SpreadsheetApp.getActive())
+      .onOpen()
+      .create()
+  }
+}
+
+function installOnChangeTriggerIfInexisting () {
+  if (!checkIfTriggerExists(ScriptApp.EventType.ON_CHANGE, 'updateModels')) {
+    ScriptApp.newTrigger('updateModels')
+      .forSpreadsheet(SpreadsheetApp.getActive())
+      .onChange()
+      .create()
+  }
+}
+
+function checkIfTriggerExists (
+  eventType: GoogleAppsScript.Script.EventType,
+  handlerFunction: string
+) {
+  const triggers = ScriptApp.getProjectTriggers()
+  let triggerExists = false
+  triggers.forEach(function (trigger) {
+    if (
+      trigger.getEventType() === eventType &&
+      trigger.getHandlerFunction() === handlerFunction
+    )
+      triggerExists = true
+  })
+  return triggerExists
 }

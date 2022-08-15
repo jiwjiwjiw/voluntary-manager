@@ -10,5 +10,9 @@
         "version": "v2"
       }
     ]
-  }
+  },
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/script.scriptapp"
+  ]
 }
