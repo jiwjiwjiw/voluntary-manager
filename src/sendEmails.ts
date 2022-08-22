@@ -252,7 +252,7 @@ function UpdateSendStatus (nom: string, prenom: string, status: string) {
   const index = personnesRange
     ?.getValues()
     .findIndex(x => x[0] === nom && x[1] === prenom)
-  if (index) {
+  if (index !== undefined && index !== -1) {
     personnesSheet
       ?.getRange(index + 2, 5, 1, 1) // increment index by 2, to take into account the different indexing (0-based for findIndex, 1-based for getRange) and the headings not included in personneRange
       .setValue(status)
