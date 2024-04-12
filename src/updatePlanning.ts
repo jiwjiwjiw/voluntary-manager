@@ -36,9 +36,11 @@ export function updatePlanning () {
     }
 
     // write computed data to spreadsheet
-    let planning = planningSheet.getRange('A2:B')
-    planning.clearContent()
-    let newPlanning = planningSheet.getRange(2, 1, output.length, 2)
-    newPlanning.setValues(output)
+    if (output.length > 0) {
+      let planning = planningSheet.getRange('A2:B')
+      planning.clearContent()
+      let newPlanning = planningSheet.getRange(2, 1, output.length, 2)
+      newPlanning.setValues(output)      
+    }
   }
 }
