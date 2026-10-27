@@ -1,5 +1,20 @@
 import { EmailTemplateParams } from './sheets-tools/EmailTemplate'
 
+/** Everything the confirmation email needs to know about one recipient. */
+export interface ConfirmationEmailData {
+  personData: {
+    nom: string
+    prenom: string
+    email: string
+  }
+  /** Labels of the plages the person is engaged on. */
+  listeEngagements: string[]
+  /** Contreparties granted to the person, remark included in parentheses. */
+  listeContreparties: string[]
+  estArtiste: boolean
+  estBenevole: boolean
+}
+
 export class ConfirmationEmailTemplateParams implements EmailTemplateParams {
   sheetName = 'modèle courriel'
   conditions = [
@@ -10,26 +25,22 @@ export class ConfirmationEmailTemplateParams implements EmailTemplateParams {
     'est bénévole et a au moins un code'
   ]
 
-  insertData (html: string, data: any): string {
+  insertData (html: string, data: ConfirmationEmailData): string {
     html = html.replaceAll('%PRENOM%', data.personData.prenom)
     html = html.replaceAll('%NOM%', data.personData.nom)
     html = html.replaceAll('%EMAIL%', data.personData.email)
     html = html.replaceAll(
       '%LISTE_ENGAGEMENTS%',
-      `<ul>${data.listeEngagements
-        .map((x: any) => `<li>${x}</li>`)
-        .join('')}</ul>`
+      `<ul>${data.listeEngagements.map(x => `<li>${x}</li>`).join('')}</ul>`
     )
     html = html.replaceAll(
       '%LISTE_CONTREPARTIES%',
-      `<ul>${data.listeContreparties
-        .map((x: any) => `<li>${x}</li>`)
-        .join('')}</ul>`
+      `<ul>${data.listeContreparties.map(x => `<li>${x}</li>`).join('')}</ul>`
     )
     return html
   }
 
-  evaluateCondition (condition: string, data: any): boolean {
+  evaluateCondition (condition: string, data: ConfirmationEmailData): boolean {
     let conditionOk = true
     switch (condition) {
       case 'a au moins un code':
