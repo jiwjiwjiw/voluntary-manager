@@ -21,14 +21,14 @@ export function composePlageLabel (row: ReadonlyArray<unknown>): string {
 }
 
 export function updatePlages () {
-  let plagesSheet = SpreadsheetApp.getActive().getSheetByName('plages')
-  let plagesRange = plagesSheet?.getRange('A2:F')
+  const plagesSheet = SpreadsheetApp.getActive().getSheetByName('plages')
+  const plagesRange = plagesSheet?.getRange('A2:F')
   // Display values, so that a date or time cell contributes the text shown
   // in the sheet rather than a JavaScript Date.
-  let plagesData = plagesRange?.getDisplayValues()
-  let output = plagesData?.map(x => [composePlageLabel(x)])
+  const plagesData = plagesRange?.getDisplayValues()
+  const output = plagesData?.map(x => [composePlageLabel(x)])
   if (output) {
-    let outputRange = plagesSheet?.getRange('F2:F')
+    const outputRange = plagesSheet?.getRange('F2:F')
     outputRange?.setValues(output)
   }
 }

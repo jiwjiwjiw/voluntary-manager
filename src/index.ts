@@ -17,7 +17,7 @@ import { testEmail, selectEmailTemplate, sendEmails } from './sendEmails'
 function updateValidation (
   modifiedRange: GoogleAppsScript.Spreadsheet.Range | undefined = undefined
 ) {
-  let validationHandler = ValidationHandler.getInstance()
+  const validationHandler = ValidationHandler.getInstance()
   validationHandler.add(
     new Validation('contreparties', 'A2:A', 'personnes', 'C2:C')
   )
@@ -42,7 +42,7 @@ function updateValidation (
 }
 
 function onOpen () {
-  let ui = SpreadsheetApp.getUi()
+  const ui = SpreadsheetApp.getUi()
   ui.createMenu('Actions')
     .addItem('Autoriser le script', 'onAuthorizeScript')
     .addItem('Envoyer les emails', 'selectEmailTemplate')

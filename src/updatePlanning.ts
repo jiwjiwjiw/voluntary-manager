@@ -45,7 +45,7 @@ export function computePlanning (
   plages: ReadonlyArray<any[]>,
   engagements: ReadonlyArray<any[]>
 ): Array<[string, string]> {
-  let output: Array<[string, string]> = []
+  const output: Array<[string, string]> = []
   for (let i = 0; i < plages.length; i++) {
     let personnes = ''
     let counter = plages[i][0]
@@ -68,27 +68,27 @@ export function computePlanning (
 
 export function updatePlanning () {
   // extract data from sheet
-  let spreadsheet = SpreadsheetApp.getActive()
-  let plagesSheet = spreadsheet.getSheetByName('plages')
-  let engagementsSheet = spreadsheet.getSheetByName('engagements')
-  let planningSheet = spreadsheet.getSheetByName('planning')
-  let plagesRange = plagesSheet?.getRange('A2:F')
-  let engagementsRange = engagementsSheet?.getRange('A2:B')
-  let plagesData = plagesRange
+  const spreadsheet = SpreadsheetApp.getActive()
+  const plagesSheet = spreadsheet.getSheetByName('plages')
+  const engagementsSheet = spreadsheet.getSheetByName('engagements')
+  const planningSheet = spreadsheet.getSheetByName('planning')
+  const plagesRange = plagesSheet?.getRange('A2:F')
+  const engagementsRange = engagementsSheet?.getRange('A2:B')
+  const plagesData = plagesRange
     ?.getValues()
     .filter(rowHasContent)
     .sort(comparePlages)
     .map(row => [row[4], row[5]]) // [nombre de personnes, libellé]
-  let engagementsData = engagementsRange?.getValues().filter(rowHasContent)
+  const engagementsData = engagementsRange?.getValues().filter(rowHasContent)
 
   if (plagesData && engagementsData && planningSheet) {
-    let output = computePlanning(plagesData, engagementsData)
+    const output = computePlanning(plagesData, engagementsData)
 
     // write computed data to spreadsheet
     if (output.length > 0) {
-      let planning = planningSheet.getRange('A2:B')
+      const planning = planningSheet.getRange('A2:B')
       planning.clearContent()
-      let newPlanning = planningSheet.getRange(2, 1, output.length, 2)
+      const newPlanning = planningSheet.getRange(2, 1, output.length, 2)
       newPlanning.setValues(output)
     }
   }

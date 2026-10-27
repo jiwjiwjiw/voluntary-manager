@@ -18,16 +18,20 @@
     "pw": "yarn push:watch",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit -p tsconfig.test.json"
+    "typecheck": "tsc --noEmit -p tsconfig.test.json",
+    "lint": "eslint ."
   },
   "devDependencies": {
+    "@eslint/js": "^10",
     "@google/clasp": "^3.4.1",
     "@types/google-apps-script": "^2.0.13",
     "@types/node": "^24",
     "copy-webpack-plugin": "^14.0.0",
+    "eslint": "^10",
     "gas-webpack-plugin": "^2.6.0",
     "ts-loader": "^9.6.2",
     "typescript": "^6.0.3",
+    "typescript-eslint": "^8",
     "vite": "8.3.5",
     "vitest": "5.0.5",
     "webpack": "^5.112.2",

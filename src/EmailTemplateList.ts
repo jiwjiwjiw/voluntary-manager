@@ -1,5 +1,5 @@
 export class EmailTemplateList {
-  public list: Array<GoogleAppsScript.Spreadsheet.Sheet> = new Array()
+  public list: Array<GoogleAppsScript.Spreadsheet.Sheet> = []
 
   constructor (private spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet) {
     this.createList()
