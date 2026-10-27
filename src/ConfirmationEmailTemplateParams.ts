@@ -16,7 +16,13 @@ export interface ConfirmationEmailData {
 }
 
 export class ConfirmationEmailTemplateParams implements EmailTemplateParams {
-  sheetName = 'modèle courriel'
+  static readonly DEFAULT_SHEET_NAME = 'modèle courriel'
+
+  /** @param sheetName the template sheet to read; defaults to `modèle courriel`. */
+  constructor (
+    readonly sheetName: string = ConfirmationEmailTemplateParams.DEFAULT_SHEET_NAME
+  ) {}
+
   conditions = [
     'a au moins un code',
     'est artiste',

@@ -23,6 +23,12 @@ describe('EmailTemplateList', () => {
     expect(list).toEqual([])
   })
 
+  it('rejects a sheet whose third header is not "Texte"', () => {
+    const sheet = new FakeSheet('presque', [['Type', 'Condition', 'Autre']])
+    const list = new EmailTemplateList(new FakeSpreadsheet([sheet]) as any).list
+    expect(list).toEqual([])
+  })
+
   it('is empty when no sheet matches', () => {
     const list = new EmailTemplateList(new FakeSpreadsheet([]) as any).list
     expect(list).toEqual([])

@@ -16,7 +16,10 @@ Dans le classeur, un menu **Actions** propose :
   changement) qui recalculent les colonnes dérivées, le planning et les listes
   déroulantes.
 - **Envoyer les emails** : envoie le courriel de confirmation à chaque personne
-  dont le statut est `à envoyer`, puis passe le statut à `envoyé`.
+  dont le statut est `à envoyer`, puis passe le statut à `envoyé`. S'il y a
+  plusieurs feuilles modèle, une boîte de dialogue demande laquelle utiliser.
+  Les personnes sans engagement ou sans adresse email ne reçoivent rien,
+  gardent leur statut et sont listées dans le rapport d'envoi.
 - **Tester les emails** : envoie à l'utilisateur courant un jeu de courriels
   couvrant toutes les combinaisons de conditions du modèle.
 
@@ -33,8 +36,11 @@ La première ligne de chaque feuille est une ligne d'en-tête.
 | `contreparties` | A personne, B contrepartie, C remarque | A référence `personnes!C`. |
 | `fonctions` | A nom, B type | B vaut `artiste` ou `bénévole`. |
 | `dates` | A date | Liste des dates autorisées pour `plages!A`. |
-| `planning` | **A plage, B personnes** | Feuille entièrement calculée. `?` marque une place vacante. |
+| `planning` | **A plage, B personnes** | Feuille entièrement calculée, triée par date puis heure de début. `?` marque une place vacante. |
 | `modèle courriel` | A type, B condition, C texte | Modèle du courriel, une ligne par bloc. |
+
+Une personne est « artiste » (resp. « bénévole ») dès qu'une de ses plages a
+une fonction de ce type dans `fonctions`.
 
 Dans `modèle courriel`, la colonne A vaut `sujet`, `titre`, `sous-titre`,
 `paragraphe`, `élément de liste` ou `aucun`. La colonne B contient une

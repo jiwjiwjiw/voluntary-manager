@@ -5,10 +5,12 @@ import { ValidationHandler } from './sheets-tools/ValidationHandler'
 import { updatePersonnes } from './updatePersonnes'
 import { updatePlages } from './updatePlages'
 import { updatePlanning } from './updatePlanning'
-import { testEmail, selectEmailTemplate } from './sendEmails'
+import { testEmail, selectEmailTemplate, sendEmails } from './sendEmails'
 ;(global as any).onOpen = onOpen
 ;(global as any).testEmail = testEmail
 ;(global as any).selectEmailTemplate = selectEmailTemplate
+// Called by the SelectEmailTemplate dialog through google.script.run.
+;(global as any).sendEmails = sendEmails
 ;(global as any).onAuthorizeScript = onAuthorizeScript
 ;(global as any).updateModels = updateModels
 

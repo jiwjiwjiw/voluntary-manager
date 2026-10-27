@@ -139,10 +139,40 @@ export function testEmail () {
   sendEmails2(template, data)
 }
 
-function sendEmails (_sheet: string) {
-  const template = new EmailTemplate(new ConfirmationEmailTemplateParams())
+/**
+ * Sends the confirmation emails using the template held in `sheetName`.
+ * Called directly when the spreadsheet has a single template sheet, and
+ * from the SelectEmailTemplate dialog (through google.script.run) otherwise.
+ */
+export function sendEmails (sheetName: string) {
+  if (!sheetName) return // the dialog's placeholder entry
+  const template = new EmailTemplate(
+    new ConfirmationEmailTemplateParams(sheetName)
+  )
   const data = collectData()
   sendEmails2(template, data)
+}
+
+/**
+ * Splits the recipients into those who get a mail and those who are only
+ * listed in the report: people without any engagement have nothing to
+ * confirm, people without an email address cannot be reached.
+ */
+export function partitionRecipients (data: ReadonlyArray<ConfirmationEmailData>) {
+  const aEnvoyer: ConfirmationEmailData[] = []
+  const sansEngagement: string[] = []
+  const sansEmail: string[] = []
+  for (const d of data) {
+    const nomComplet = `${d.personData.nom} ${d.personData.prenom}`
+    if (d.listeEngagements.length === 0) {
+      sansEngagement.push(nomComplet)
+    } else if (!d.personData.email) {
+      sansEmail.push(nomComplet)
+    } else {
+      aEnvoyer.push(d)
+    }
+  }
+  return { aEnvoyer, sansEngagement, sansEmail }
 }
 
 function sendEmails2 (template: EmailTemplate, data: ConfirmationEmailData[]) {
@@ -152,33 +182,32 @@ function sendEmails2 (template: EmailTemplate, data: ConfirmationEmailData[]) {
     return
   }
 
+  // an unreadable template would send empty mails
+  if (template.isEmpty()) {
+    SpreadsheetApp.getUi().alert(
+      'Envoi impossible, le modèle de courriel est vide ou introuvable!'
+    )
+    return
+  }
+
+  const { aEnvoyer, sansEngagement, sansEmail } = partitionRecipients(data)
+
   // check if mail quota is sufficient
-  if (MailApp.getRemainingDailyQuota() < data.length) {
+  if (MailApp.getRemainingDailyQuota() < aEnvoyer.length) {
     SpreadsheetApp.getUi().alert(
       "Envoi impossible, quota d'envoi journalier dépassé!"
     )
     return
   }
 
-  let destinatairesSansEngagements = []
-  let mailsEnvoyes = 0
-  for (const d of data) {
+  for (const d of aEnvoyer) {
     const { subject, html } = template.constructHtml(d)
-    const html2 = template.insertData(html, d)
-
-    if (d.listeEngagements.length > 0) {
-      MailApp.sendEmail({
-        to: d.personData.email,
-        subject: subject,
-        htmlBody: html2
-      })
-      mailsEnvoyes++
-      UpdateSendStatus(d.personData.nom, d.personData.prenom, 'envoyé')
-    } else {
-      destinatairesSansEngagements.push(
-        `${d.personData.nom} ${d.personData.prenom}`
-      )
-    }
+    MailApp.sendEmail({
+      to: d.personData.email,
+      subject: subject,
+      htmlBody: template.insertData(html, d)
+    })
+    UpdateSendStatus(d.personData.nom, d.personData.prenom, 'envoyé')
   }
 
   // confirm mails are sent
@@ -186,8 +215,9 @@ function sendEmails2 (template: EmailTemplate, data: ConfirmationEmailData[]) {
     'dist/emailReportTemplate'
   )
   htmlOutput.report = {
-    envoyes: mailsEnvoyes,
-    nonEnvoyes: destinatairesSansEngagements
+    envoyes: aEnvoyer.length,
+    nonEnvoyes: sansEngagement,
+    sansEmail: sansEmail
   }
   let emailReport = htmlOutput.evaluate()
   SpreadsheetApp.getUi().showModalDialog(emailReport, "Rapport d'envoi")
@@ -196,16 +226,24 @@ function sendEmails2 (template: EmailTemplate, data: ConfirmationEmailData[]) {
 /**
  * Assembles the email data of every recipient from the raw sheet rows.
  *
+ * A person is an artist (resp. a volunteer) when at least one of their
+ * plages has a function of type `artiste` (resp. `bénévole`). The function
+ * of a plage is looked up in `plages` by label, so a function name that is
+ * part of another one (bar / barman) or that appears in a date or a name
+ * cannot cause a false match.
+ *
  * @param destinataires rows of `personnes!A:E` to send to: [nom, prénom, « prénom nom », email, statut]
  * @param engagements rows of `engagements!A:B`: [personne, libellé de plage]
  * @param contreparties rows of `contreparties!A:C`: [personne, contrepartie, remarque]
  * @param fonctions rows of `fonctions!A:B`: [nom, type] with type `artiste` or `bénévole`
+ * @param plages rows of `plages!A:F`: [date, fonction, début, fin, nombre, libellé]
  */
 export function buildEmailData (
   destinataires: ReadonlyArray<any[]>,
   engagements: ReadonlyArray<any[]>,
   contreparties: ReadonlyArray<any[]>,
-  fonctions: ReadonlyArray<any[]>
+  fonctions: ReadonlyArray<any[]>,
+  plages: ReadonlyArray<any[]>
 ): ConfirmationEmailData[] {
   const fonctionsArtiste = fonctions
     .filter(rowHasValue(1, 'artiste'))
@@ -213,6 +251,14 @@ export function buildEmailData (
   const fonctionsBenevole = fonctions
     .filter(rowHasValue(1, 'bénévole'))
     .map(getColumnAsRow(0))
+  const fonctionDePlage = new Map<string, string>(
+    plages.map(row => [row[5], row[1]])
+  )
+  const aUneFonctionParmi = (listeEngagements: string[], noms: string[]) =>
+    listeEngagements.some(label => {
+      const fonction = fonctionDePlage.get(label)
+      return fonction !== undefined && noms.includes(fonction)
+    })
 
   let data: ConfirmationEmailData[] = []
   for (const d of destinataires) {
@@ -230,12 +276,8 @@ export function buildEmailData (
       },
       listeEngagements: listeEngagements,
       listeContreparties: listeContreparties,
-      estArtiste: fonctionsArtiste.some(x =>
-        listeEngagements.join(',').includes(x)
-      ),
-      estBenevole: fonctionsBenevole.some(x =>
-        listeEngagements.join(',').includes(x)
-      )
+      estArtiste: aUneFonctionParmi(listeEngagements, fonctionsArtiste),
+      estBenevole: aUneFonctionParmi(listeEngagements, fonctionsBenevole)
     })
   }
   return data
@@ -260,9 +302,18 @@ function collectData (): ConfirmationEmailData[] {
   const fonctionsRange = fonctionsSheet?.getRange('A2:B')
   const fonctionsData = fonctionsRange?.getValues()
   const fonctions = fonctionsData?.filter(rowHasContent) ?? []
+  const plagesSheet = classeur.getSheetByName('plages')
+  const plagesRange = plagesSheet?.getRange('A2:F')
+  const plages = plagesRange?.getDisplayValues().filter(rowHasContent) ?? []
 
   if (destinataires && engagements && contreparties) {
-    return buildEmailData(destinataires, engagements, contreparties, fonctions)
+    return buildEmailData(
+      destinataires,
+      engagements,
+      contreparties,
+      fonctions,
+      plages
+    )
   }
   return []
 }

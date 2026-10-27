@@ -13,5 +13,13 @@
         <? } ?>  
       </ul>
     <? } ?>
+    <? if(report.sansEmail.length) { ?>
+      <p>Messages non envoyés aux destinataires suivants car leur adresse email est manquante :</p>
+      <ul>
+        <? for (index in report.sansEmail) { ?>
+          <li><?= report.sansEmail[index] ?></li>
+        <? } ?>
+      </ul>
+    <? } ?>
     </body>
 </html>

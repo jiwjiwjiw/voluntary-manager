@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { computePlanning, updatePlanning } from '../src/updatePlanning'
+import { comparePlages, computePlanning, updatePlanning } from '../src/updatePlanning'
 import { FakeSheet, installSpreadsheetApp } from './fakeSpreadsheet'
 
 afterEach(() => vi.unstubAllGlobals())
@@ -35,12 +35,56 @@ describe('computePlanning', () => {
   })
 })
 
+describe('comparePlages', () => {
+  const row = (date: any, debut: any = '') => [date, 'f', debut, '', 1, 'l']
+
+  it('orders by date before anything else', () => {
+    const rows = [row('02.01.2021'), row('15.12.2020'), row('01.01.2021')]
+    expect(rows.sort(comparePlages).map(r => r[0])).toEqual([
+      '15.12.2020',
+      '01.01.2021',
+      '02.01.2021'
+    ])
+  })
+
+  it('accepts Date cells and text dates alike', () => {
+    const rows = [row('02.01.2021'), row(new Date(2021, 0, 1))]
+    expect(rows.sort(comparePlages).map(r => r[0])).toEqual([
+      new Date(2021, 0, 1),
+      '02.01.2021'
+    ])
+  })
+
+  it('breaks ties on the start time', () => {
+    const rows = [
+      row('01.01.2021', '20:00'),
+      row('01.01.2021', new Date(1899, 11, 30, 9, 30)),
+      row('01.01.2021', '14:00')
+    ]
+    expect(rows.sort(comparePlages).map(r => r[2])).toEqual([
+      new Date(1899, 11, 30, 9, 30),
+      '14:00',
+      '20:00'
+    ])
+  })
+
+  it('puts rows without a recognisable date last, in text order', () => {
+    const rows = [row('b'), row('01.01.2021'), row('a')]
+    expect(rows.sort(comparePlages).map(r => r[0])).toEqual([
+      '01.01.2021',
+      'a',
+      'b'
+    ])
+  })
+})
+
 describe('updatePlanning', () => {
-  it('rewrites the planning sheet sorted by label', () => {
+  it('rewrites the planning sheet in chronological order', () => {
     const plages = new FakeSheet('plages', [
       ['date', 'fonction', 'début', 'fin', 'nombre', 'libellé'],
       ['02.01.2021', 'caisse', '', '', 1, '02.01.2021 | caisse'],
-      ['01.01.2021', 'bar', '20:00', '21:00', 2, '01.01.2021 | bar | 20:00-21:00']
+      ['01.01.2021', 'bar', '20:00', '21:00', 2, '01.01.2021 | bar | 20:00-21:00'],
+      ['15.12.2020', 'bar', '20:00', '21:00', 1, '15.12.2020 | bar | 20:00-21:00']
     ])
     const engagements = new FakeSheet('engagements', [
       ['personne', 'plage'],
@@ -50,17 +94,19 @@ describe('updatePlanning', () => {
       ['plage', 'personnes'],
       ['old 1', 'x'],
       ['old 2', 'y'],
-      ['old 3', 'z']
+      ['old 3', 'z'],
+      ['old 4', 'w']
     ])
     installSpreadsheetApp([plages, engagements, planning])
 
     updatePlanning()
 
     expect(planning.column(1)).toEqual([
+      '15.12.2020 | bar | 20:00-21:00',
       '01.01.2021 | bar | 20:00-21:00',
       '02.01.2021 | caisse'
     ])
-    expect(planning.column(2)).toEqual(['Marie Dupont\n?', '?'])
+    expect(planning.column(2)).toEqual(['?', 'Marie Dupont\n?', '?'])
   })
 
   it('leaves the planning sheet alone when there is no plage', () => {

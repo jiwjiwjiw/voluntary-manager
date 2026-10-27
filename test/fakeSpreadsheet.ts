@@ -68,9 +68,20 @@ function columnIndex (letters: string): number {
   return n
 }
 
+const pad = (n: number) => String(n).padStart(2, '0')
+
+/**
+ * What getDisplayValues() returns for a cell: the text shown in the sheet.
+ * Dates follow the fr-CH formats a Europe/Zurich spreadsheet shows; a
+ * time-only cell is a Date on 1899-12-30, as in Apps Script.
+ */
 function cellToString (v: Cell | undefined): string {
   if (v === undefined || v === null) return ''
   if (v instanceof FakeRichText) return v.getText()
+  if (v instanceof Date) {
+    if (v.getFullYear() === 1899) return `${pad(v.getHours())}:${pad(v.getMinutes())}`
+    return `${pad(v.getDate())}.${pad(v.getMonth() + 1)}.${v.getFullYear()}`
+  }
   return String(v)
 }
 
@@ -333,4 +344,37 @@ export function installSpreadsheetApp (sheets: FakeSheet[]) {
     newDataValidation
   })
   return { spreadsheet, ui }
+}
+
+/** Stubs MailApp: records sent mails, reports the given remaining quota. */
+export function installMailApp (remainingQuota = 100) {
+  const sent: any[] = []
+  vi.stubGlobal('MailApp', {
+    getRemainingDailyQuota: () => remainingQuota,
+    sendEmail: (message: any) => {
+      sent.push(message)
+    }
+  })
+  return { sent }
+}
+
+/**
+ * Stubs HtmlService: createTemplateFromFile() returns a template object whose
+ * evaluate() yields a chainable output; the templates created are returned so
+ * that a test can inspect the data assigned to them.
+ */
+export function installHtmlService () {
+  const templates: Array<{ file: string; template: any }> = []
+  vi.stubGlobal('HtmlService', {
+    createTemplateFromFile: (file: string) => {
+      const output: any = {
+        setWidth: () => output,
+        setHeight: () => output
+      }
+      const template: any = { evaluate: () => output }
+      templates.push({ file, template })
+      return template
+    }
+  })
+  return { templates }
 }
