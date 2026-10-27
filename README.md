@@ -69,6 +69,8 @@ test/
   *.test.ts                          tests unitaires (vitest)
 .github/workflows/ci.yml             typecheck + tests + build sur GitHub Actions
 appsscript.json                      manifeste Apps Script (scopes, fuseau)
+scripts/init-workspace.js            crée le fichier workspace VS Code au `yarn install`
+voluntary-manager.code-workspace.example  modèle du fichier workspace VS Code
 webpack.config.js                    bundle + copie des HTML vers dist/
 tsconfig.json                        compilation du bundle (src/ seulement)
 tsconfig.test.json                   vérification des types de src/ et test/
@@ -94,6 +96,11 @@ yarn build          # produit dist/
 npx clasp login     # une seule fois
 yarn push           # pousse dist/ et appsscript.json dans le projet Apps Script
 ```
+
+`yarn install` crée aussi `voluntary-manager.code-workspace` à partir de
+`voluntary-manager.code-workspace.example` s'il n'existe pas encore. Le
+fichier créé est ignoré par git : chacun peut le personnaliser sans rien
+commiter. Les changements destinés à tous se font dans le `.example`.
 
 Si le dépôt a été cloné sans `--recurse-submodules`, exécuter
 `git submodule update --init` avant `yarn build`, sinon la compilation échoue
