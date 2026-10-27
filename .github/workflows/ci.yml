@@ -1,0 +1,29 @@
+# Runs the type check, the unit tests and the webpack build on every push
+# and pull request. Nothing is pushed to Apps Script from CI: deployment
+# stays a manual `yarn push` by someone logged in with clasp.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # src/sheets-tools is a git submodule; without it the build fails
+          # on the ./sheets-tools/... imports.
+          submodules: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: yarn
+
+      - run: corepack enable
+      - run: yarn install --frozen-lockfile
+      - run: yarn typecheck
+      - run: yarn test
+      - run: yarn build
