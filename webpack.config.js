@@ -1,6 +1,5 @@
 const path = require('path')
 const GasPlugin = require('gas-webpack-plugin')
-const CleanPlugin = require('clean-webpack-plugin')
 const CopyPlugin = require('copy-webpack-plugin')
 
 const config = {
@@ -20,11 +19,12 @@ const config = {
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
-    filename: 'bundle.js'
+    filename: 'bundle.js',
+    // Empty dist/ before each build (replaces clean-webpack-plugin).
+    clean: true
   },
   plugins: [
     new GasPlugin(),
-    new CleanPlugin.CleanWebpackPlugin(),
     new CopyPlugin({
       patterns: [
         {

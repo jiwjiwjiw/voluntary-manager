@@ -7,25 +7,28 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "b": "webpack --mode none",
-    "p": "clasp push",
-    "bw": "webpack --mode none -w",
-    "pw": "clasp push -w"
+    "build": "webpack --mode none",
+    "build:watch": "webpack --mode none -w",
+    "push": "clasp push",
+    "push:watch": "clasp push -w",
+    "b": "yarn build",
+    "bw": "yarn build:watch",
+    "p": "yarn push",
+    "pw": "yarn push:watch"
   },
   "devDependencies": {
-    "clean-webpack-plugin": "^4.0.0",
-    "copy-webpack-plugin": "^10.2.0",
-    "gas-webpack-plugin": "^2.1.0",
-    "standard": "^16.0.4",
-    "ts-loader": "^9.2.6",
-    "typescript": "^4.5.2",
-    "webpack": "^5.76.0",
-    "webpack-cli": "^4.9.1"
+    "@google/clasp": "^3.4.1",
+    "@types/google-apps-script": "^2.0.13",
+    "@types/node": "^24",
+    "copy-webpack-plugin": "^14.0.0",
+    "gas-webpack-plugin": "^2.6.0",
+    "ts-loader": "^9.6.2",
+    "typescript": "^6.0.3",
+    "webpack": "^5.112.2",
+    "webpack-cli": "^7.2.3"
   },
-  "dependencies": {
-    "@types/google-apps-script": "^1.0.83",
-    "@types/node": "^16.11.10",
-    "date-fns": "^2.28.0",
-    "lodash": "^4.17.21"
-  }
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "packageManager": "yarn@1.22.22"
 }
