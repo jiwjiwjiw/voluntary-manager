@@ -11,17 +11,17 @@ import {
 } from './sheets-tools/helpers'
 
 export function selectEmailTemplate () {
-  let templateList = new EmailTemplateList(SpreadsheetApp.getActive()).list
+  const templateList = new EmailTemplateList(SpreadsheetApp.getActive()).list
   if (templateList.length == 0) {
     SpreadsheetApp.getUi().alert('Aucun modèle de message défini!')
   } else if (templateList.length == 1) {
     sendEmails(templateList[0].getName())
   } else {
-    let htmlTemplate = HtmlService.createTemplateFromFile(
+    const htmlTemplate = HtmlService.createTemplateFromFile(
       'dist/SelectEmailTemplate'
     )
     htmlTemplate.templateNames = templateList.map(x => x.getName())
-    let html = htmlTemplate
+    const html = htmlTemplate
       .evaluate()
       .setWidth(250)
       .setHeight(40)
@@ -211,7 +211,7 @@ function sendEmails2 (template: EmailTemplate, data: ConfirmationEmailData[]) {
   }
 
   // confirm mails are sent
-  var htmlOutput = HtmlService.createTemplateFromFile(
+  const htmlOutput = HtmlService.createTemplateFromFile(
     'dist/emailReportTemplate'
   )
   htmlOutput.report = {
@@ -219,7 +219,7 @@ function sendEmails2 (template: EmailTemplate, data: ConfirmationEmailData[]) {
     nonEnvoyes: sansEngagement,
     sansEmail: sansEmail
   }
-  let emailReport = htmlOutput.evaluate()
+  const emailReport = htmlOutput.evaluate()
   SpreadsheetApp.getUi().showModalDialog(emailReport, "Rapport d'envoi")
 }
 
@@ -260,7 +260,7 @@ export function buildEmailData (
       return fonction !== undefined && noms.includes(fonction)
     })
 
-  let data: ConfirmationEmailData[] = []
+  const data: ConfirmationEmailData[] = []
   for (const d of destinataires) {
     const listeEngagements = engagements
       .filter(rowHasValue(0, d[2]))

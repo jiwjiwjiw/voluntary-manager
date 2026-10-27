@@ -8,12 +8,12 @@ export function composeFullName (row: ReadonlyArray<unknown>): string {
 }
 
 export function updatePersonnes () {
-  let personnesSheet = SpreadsheetApp.getActive().getSheetByName('personnes')
-  let personnesRange = personnesSheet?.getRange('A2:F')
-  let personnesData = personnesRange?.getValues()
-  let output = personnesData?.map(x => [composeFullName(x)])
+  const personnesSheet = SpreadsheetApp.getActive().getSheetByName('personnes')
+  const personnesRange = personnesSheet?.getRange('A2:F')
+  const personnesData = personnesRange?.getValues()
+  const output = personnesData?.map(x => [composeFullName(x)])
   if (output) {
-    let outputRange = personnesSheet?.getRange('C2:C')
+    const outputRange = personnesSheet?.getRange('C2:C')
     outputRange?.setValues(output)
   }
 }
