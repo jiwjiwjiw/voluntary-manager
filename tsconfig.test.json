@@ -1,0 +1,10 @@
+{
+  /* Type-checks the sources together with the tests. The build keeps using
+     tsconfig.json, so test-only code never reaches the bundle. */
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts"]
+}

@@ -14,7 +14,10 @@
     "b": "yarn build",
     "bw": "yarn build:watch",
     "p": "yarn push",
-    "pw": "yarn push:watch"
+    "pw": "yarn push:watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json"
   },
   "devDependencies": {
     "@google/clasp": "^3.4.1",
@@ -24,6 +27,8 @@
     "gas-webpack-plugin": "^2.6.0",
     "ts-loader": "^9.6.2",
     "typescript": "^6.0.3",
+    "vite": "8.3.5",
+    "vitest": "5.0.5",
     "webpack": "^5.112.2",
     "webpack-cli": "^7.2.3"
   },
