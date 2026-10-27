@@ -7,12 +7,17 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "b": "webpack --mode none",
-    "p": "clasp push",
-    "bw": "webpack --mode none -w",
-    "pw": "clasp push -w"
+    "build": "webpack --mode none",
+    "build:watch": "webpack --mode none -w",
+    "push": "clasp push",
+    "push:watch": "clasp push -w",
+    "b": "yarn build",
+    "bw": "yarn build:watch",
+    "p": "yarn push",
+    "pw": "yarn push:watch"
   },
   "devDependencies": {
+    "@google/clasp": "^3.4.1",
     "@types/google-apps-script": "^2.0.13",
     "@types/node": "^24",
     "clean-webpack-plugin": "^4.0.0",
