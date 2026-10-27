@@ -334,3 +334,36 @@ export function installSpreadsheetApp (sheets: FakeSheet[]) {
   })
   return { spreadsheet, ui }
 }
+
+/** Stubs MailApp: records sent mails, reports the given remaining quota. */
+export function installMailApp (remainingQuota = 100) {
+  const sent: any[] = []
+  vi.stubGlobal('MailApp', {
+    getRemainingDailyQuota: () => remainingQuota,
+    sendEmail: (message: any) => {
+      sent.push(message)
+    }
+  })
+  return { sent }
+}
+
+/**
+ * Stubs HtmlService: createTemplateFromFile() returns a template object whose
+ * evaluate() yields a chainable output; the templates created are returned so
+ * that a test can inspect the data assigned to them.
+ */
+export function installHtmlService () {
+  const templates: Array<{ file: string; template: any }> = []
+  vi.stubGlobal('HtmlService', {
+    createTemplateFromFile: (file: string) => {
+      const output: any = {
+        setWidth: () => output,
+        setHeight: () => output
+      }
+      const template: any = { evaluate: () => output }
+      templates.push({ file, template })
+      return template
+    }
+  })
+  return { templates }
+}

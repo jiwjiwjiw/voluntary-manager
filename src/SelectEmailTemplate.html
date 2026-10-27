@@ -6,13 +6,14 @@
   <script>
     function doSendEmails() {
       var name = document.getElementById('template-select').value;
+      if (!name) return;
       google.script.run.sendEmails(name);
       google.script.host.close();
     }
   </script>
   <body>
     <select name="templates" id="template-select" onchange="doSendEmails();">
-      <option value="undefined">- Choisir un modèle -</option>
+      <option value="">- Choisir un modèle -</option>
       <? for (let index in templateNames) { ?>
             <option value="<?= templateNames[index] ?>"><?= templateNames[index] ?></option>
           <? } ?>

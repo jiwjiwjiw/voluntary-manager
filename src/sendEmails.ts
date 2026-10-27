@@ -139,8 +139,16 @@ export function testEmail () {
   sendEmails2(template, data)
 }
 
-function sendEmails (_sheet: string) {
-  const template = new EmailTemplate(new ConfirmationEmailTemplateParams())
+/**
+ * Sends the confirmation emails using the template held in `sheetName`.
+ * Called directly when the spreadsheet has a single template sheet, and
+ * from the SelectEmailTemplate dialog (through google.script.run) otherwise.
+ */
+export function sendEmails (sheetName: string) {
+  if (!sheetName) return // the dialog's placeholder entry
+  const template = new EmailTemplate(
+    new ConfirmationEmailTemplateParams(sheetName)
+  )
   const data = collectData()
   sendEmails2(template, data)
 }
