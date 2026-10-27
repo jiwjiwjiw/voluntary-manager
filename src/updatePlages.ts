@@ -23,7 +23,9 @@ export function composePlageLabel (row: ReadonlyArray<unknown>): string {
 export function updatePlages () {
   let plagesSheet = SpreadsheetApp.getActive().getSheetByName('plages')
   let plagesRange = plagesSheet?.getRange('A2:F')
-  let plagesData = plagesRange?.getValues()
+  // Display values, so that a date or time cell contributes the text shown
+  // in the sheet rather than a JavaScript Date.
+  let plagesData = plagesRange?.getDisplayValues()
   let output = plagesData?.map(x => [composePlageLabel(x)])
   if (output) {
     let outputRange = plagesSheet?.getRange('F2:F')

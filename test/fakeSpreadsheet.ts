@@ -68,9 +68,20 @@ function columnIndex (letters: string): number {
   return n
 }
 
+const pad = (n: number) => String(n).padStart(2, '0')
+
+/**
+ * What getDisplayValues() returns for a cell: the text shown in the sheet.
+ * Dates follow the fr-CH formats a Europe/Zurich spreadsheet shows; a
+ * time-only cell is a Date on 1899-12-30, as in Apps Script.
+ */
 function cellToString (v: Cell | undefined): string {
   if (v === undefined || v === null) return ''
   if (v instanceof FakeRichText) return v.getText()
+  if (v instanceof Date) {
+    if (v.getFullYear() === 1899) return `${pad(v.getHours())}:${pad(v.getMinutes())}`
+    return `${pad(v.getDate())}.${pad(v.getMonth() + 1)}.${v.getFullYear()}`
+  }
   return String(v)
 }
 

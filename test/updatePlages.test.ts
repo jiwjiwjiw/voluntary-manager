@@ -27,6 +27,25 @@ describe('composePlageLabel', () => {
 })
 
 describe('updatePlages', () => {
+  it('uses the displayed text of date and time cells', () => {
+    const plages = new FakeSheet('plages', [
+      ['date', 'fonction', 'début', 'fin', 'nombre', 'libellé'],
+      [
+        new Date(2021, 0, 1),
+        'bar',
+        new Date(1899, 11, 30, 20, 0),
+        new Date(1899, 11, 30, 21, 30),
+        2,
+        ''
+      ]
+    ])
+    installSpreadsheetApp([plages])
+
+    updatePlages()
+
+    expect(plages.column(6)).toEqual(['01.01.2021 | bar | 20:00-21:30'])
+  })
+
   it('writes the label of every row into column F', () => {
     const plages = new FakeSheet('plages', [
       ['date', 'fonction', 'début', 'fin', 'nombre', 'libellé'],
