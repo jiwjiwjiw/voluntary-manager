@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { sendEmails } from '../src/sendEmails'
+import { partitionRecipients, sendEmails } from '../src/sendEmails'
 import {
   FakeSheet,
   installHtmlService,
@@ -15,11 +15,14 @@ function workbook (extraSheets: FakeSheet[] = []) {
   const personnes = new FakeSheet('personnes', [
     ['nom', 'prénom', 'prénom nom', 'email', 'statut'],
     ['Dupont', 'Marie', 'Marie Dupont', 'marie@example.org', 'à envoyer'],
-    ['Martin', 'Jean', 'Jean Martin', 'jean@example.org', 'envoyé']
+    ['Martin', 'Jean', 'Jean Martin', 'jean@example.org', 'envoyé'],
+    ['Durand', 'Paul', 'Paul Durand', '', 'à envoyer'],
+    ['Petit', 'Léa', 'Léa Petit', 'lea@example.org', 'à envoyer']
   ])
   const engagements = new FakeSheet('engagements', [
     ['personne', 'plage'],
-    ['Marie Dupont', '01.01.2021 | bar | 20:00-21:00']
+    ['Marie Dupont', '01.01.2021 | bar | 20:00-21:00'],
+    ['Paul Durand', '01.01.2021 | bar | 20:00-21:00']
   ])
   const contreparties = new FakeSheet('contreparties', [
     ['personne', 'contrepartie', 'remarque']
@@ -71,9 +74,52 @@ describe('sendEmails', () => {
     expect(templates[0].file).toBe('dist/emailReportTemplate')
     expect(templates[0].template.report).toEqual({
       envoyes: 1,
-      nonEnvoyes: []
+      nonEnvoyes: ['Petit Léa'],
+      sansEmail: ['Durand Paul']
     })
     expect(ui.showModalDialog).toHaveBeenCalledTimes(1)
+  })
+
+  it('leaves the status of people it could not write to untouched', () => {
+    const { personnes } = workbook([
+      new FakeSheet('modèle courriel', [headers, ['sujet', '', 'S']])
+    ])
+
+    sendEmails('modèle courriel')
+
+    expect(personnes.column(5)).toEqual([
+      'envoyé',
+      'envoyé',
+      'à envoyer',
+      'à envoyer'
+    ])
+  })
+
+  it('refuses to send from an empty template', () => {
+    const { sent, ui } = workbook([
+      new FakeSheet('modèle courriel', [headers])
+    ])
+
+    sendEmails('modèle courriel')
+
+    expect(sent).toHaveLength(0)
+    expect(ui.alerts).toHaveLength(1)
+    expect(ui.showModalDialog).not.toHaveBeenCalled()
+  })
+
+  it('refuses to send when the daily quota is too low', () => {
+    const { sent, ui } = workbook([
+      new FakeSheet('modèle courriel', [headers, ['sujet', '', 'S']])
+    ])
+    vi.stubGlobal('MailApp', {
+      getRemainingDailyQuota: () => 0,
+      sendEmail: () => sent.push('unexpected')
+    })
+
+    sendEmails('modèle courriel')
+
+    expect(sent).toHaveLength(0)
+    expect(ui.alerts).toEqual(["Envoi impossible, quota d'envoi journalier dépassé!"])
   })
 
   it("ignores the dialog's placeholder entry", () => {
@@ -85,5 +131,28 @@ describe('sendEmails', () => {
 
     expect(sent).toHaveLength(0)
     expect(ui.showModalDialog).not.toHaveBeenCalled()
+  })
+})
+
+describe('partitionRecipients', () => {
+  const person = (nom: string, email: string, engagements: string[]) => ({
+    personData: { nom, prenom: 'p', email },
+    listeEngagements: engagements,
+    listeContreparties: [],
+    estArtiste: false,
+    estBenevole: false
+  })
+
+  it('separates people without engagement and without email', () => {
+    const ok = person('Ok', 'ok@example.org', ['e'])
+    const result = partitionRecipients([
+      ok,
+      person('SansEngagement', 'x@example.org', []),
+      person('SansEmail', '', ['e']),
+      person('SansRien', '', [])
+    ])
+    expect(result.aEnvoyer).toEqual([ok])
+    expect(result.sansEngagement).toEqual(['SansEngagement p', 'SansRien p'])
+    expect(result.sansEmail).toEqual(['SansEmail p'])
   })
 })

@@ -153,6 +153,28 @@ export function sendEmails (sheetName: string) {
   sendEmails2(template, data)
 }
 
+/**
+ * Splits the recipients into those who get a mail and those who are only
+ * listed in the report: people without any engagement have nothing to
+ * confirm, people without an email address cannot be reached.
+ */
+export function partitionRecipients (data: ReadonlyArray<ConfirmationEmailData>) {
+  const aEnvoyer: ConfirmationEmailData[] = []
+  const sansEngagement: string[] = []
+  const sansEmail: string[] = []
+  for (const d of data) {
+    const nomComplet = `${d.personData.nom} ${d.personData.prenom}`
+    if (d.listeEngagements.length === 0) {
+      sansEngagement.push(nomComplet)
+    } else if (!d.personData.email) {
+      sansEmail.push(nomComplet)
+    } else {
+      aEnvoyer.push(d)
+    }
+  }
+  return { aEnvoyer, sansEngagement, sansEmail }
+}
+
 function sendEmails2 (template: EmailTemplate, data: ConfirmationEmailData[]) {
   // check if there are mails to send
   if (data.length === 0) {
@@ -160,33 +182,32 @@ function sendEmails2 (template: EmailTemplate, data: ConfirmationEmailData[]) {
     return
   }
 
+  // an unreadable template would send empty mails
+  if (template.isEmpty()) {
+    SpreadsheetApp.getUi().alert(
+      'Envoi impossible, le modèle de courriel est vide ou introuvable!'
+    )
+    return
+  }
+
+  const { aEnvoyer, sansEngagement, sansEmail } = partitionRecipients(data)
+
   // check if mail quota is sufficient
-  if (MailApp.getRemainingDailyQuota() < data.length) {
+  if (MailApp.getRemainingDailyQuota() < aEnvoyer.length) {
     SpreadsheetApp.getUi().alert(
       "Envoi impossible, quota d'envoi journalier dépassé!"
     )
     return
   }
 
-  let destinatairesSansEngagements = []
-  let mailsEnvoyes = 0
-  for (const d of data) {
+  for (const d of aEnvoyer) {
     const { subject, html } = template.constructHtml(d)
-    const html2 = template.insertData(html, d)
-
-    if (d.listeEngagements.length > 0) {
-      MailApp.sendEmail({
-        to: d.personData.email,
-        subject: subject,
-        htmlBody: html2
-      })
-      mailsEnvoyes++
-      UpdateSendStatus(d.personData.nom, d.personData.prenom, 'envoyé')
-    } else {
-      destinatairesSansEngagements.push(
-        `${d.personData.nom} ${d.personData.prenom}`
-      )
-    }
+    MailApp.sendEmail({
+      to: d.personData.email,
+      subject: subject,
+      htmlBody: template.insertData(html, d)
+    })
+    UpdateSendStatus(d.personData.nom, d.personData.prenom, 'envoyé')
   }
 
   // confirm mails are sent
@@ -194,8 +215,9 @@ function sendEmails2 (template: EmailTemplate, data: ConfirmationEmailData[]) {
     'dist/emailReportTemplate'
   )
   htmlOutput.report = {
-    envoyes: mailsEnvoyes,
-    nonEnvoyes: destinatairesSansEngagements
+    envoyes: aEnvoyer.length,
+    nonEnvoyes: sansEngagement,
+    sansEmail: sansEmail
   }
   let emailReport = htmlOutput.evaluate()
   SpreadsheetApp.getUi().showModalDialog(emailReport, "Rapport d'envoi")
