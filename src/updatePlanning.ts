@@ -1,4 +1,37 @@
-import { compareRowsOnColumn, rowHasContent } from './sheets-tools/helpers'
+import { rowHasContent } from './sheets-tools/helpers'
+
+/**
+ * Chronological sort key of a `plages` row ([date, fonction, début, fin, …]).
+ * The date cell is a Date when Sheets recognised it, or a `jj.mm.aaaa` text;
+ * anything else sorts after the dated rows, by its text. The start time
+ * breaks ties between plages of the same day.
+ */
+export function plageSortKey (row: ReadonlyArray<any>): [number, string, string] {
+  const date = row[0]
+  let time = NaN
+  if (date instanceof Date) {
+    time = date.getTime()
+  } else {
+    const m = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(String(date).trim())
+    if (m) time = new Date(+m[3], +m[2] - 1, +m[1]).getTime()
+  }
+  const debut = row[2]
+  const debutKey =
+    debut instanceof Date
+      ? `${String(debut.getHours()).padStart(2, '0')}:${String(debut.getMinutes()).padStart(2, '0')}`
+      : String(debut)
+  return [Number.isNaN(time) ? Infinity : time, String(date), debutKey]
+}
+
+export function comparePlages (a: ReadonlyArray<any>, b: ReadonlyArray<any>) {
+  const ka = plageSortKey(a)
+  const kb = plageSortKey(b)
+  for (let i = 0; i < ka.length; i++) {
+    if (ka[i] < kb[i]) return -1
+    if (ka[i] > kb[i]) return 1
+  }
+  return 0
+}
 
 /**
  * Builds the planning rows: one row per plage, with the label in the first
@@ -39,12 +72,13 @@ export function updatePlanning () {
   let plagesSheet = spreadsheet.getSheetByName('plages')
   let engagementsSheet = spreadsheet.getSheetByName('engagements')
   let planningSheet = spreadsheet.getSheetByName('planning')
-  let plagesRange = plagesSheet?.getRange('E2:F')
+  let plagesRange = plagesSheet?.getRange('A2:F')
   let engagementsRange = engagementsSheet?.getRange('A2:B')
   let plagesData = plagesRange
     ?.getValues()
     .filter(rowHasContent)
-    .sort(compareRowsOnColumn(1))
+    .sort(comparePlages)
+    .map(row => [row[4], row[5]]) // [nombre de personnes, libellé]
   let engagementsData = engagementsRange?.getValues().filter(rowHasContent)
 
   if (plagesData && engagementsData && planningSheet) {
