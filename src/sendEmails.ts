@@ -1,4 +1,7 @@
-import { ConfirmationEmailTemplateParams } from './ConfirmationEmailTemplateParams'
+import {
+  ConfirmationEmailData,
+  ConfirmationEmailTemplateParams
+} from './ConfirmationEmailTemplateParams'
 import { EmailTemplateList } from './EmailTemplateList'
 import { EmailTemplate } from './sheets-tools/EmailTemplate'
 import {
@@ -32,7 +35,7 @@ export function selectEmailTemplate () {
 export function testEmail () {
   const template = new EmailTemplate(new ConfirmationEmailTemplateParams())
   const ownEmail = Session.getActiveUser().getEmail()
-  const data = [
+  const data: ConfirmationEmailData[] = [
     {
       personData: {
         nom: 'TEST',
@@ -142,7 +145,7 @@ function sendEmails (_sheet: string) {
   sendEmails2(template, data)
 }
 
-function sendEmails2 (template: EmailTemplate, data: any) {
+function sendEmails2 (template: EmailTemplate, data: ConfirmationEmailData[]) {
   // check if there are mails to send
   if (data.length === 0) {
     SpreadsheetApp.getUi().alert('Aucun mail à envoyer!')
@@ -190,7 +193,55 @@ function sendEmails2 (template: EmailTemplate, data: any) {
   SpreadsheetApp.getUi().showModalDialog(emailReport, "Rapport d'envoi")
 }
 
-function collectData () {
+/**
+ * Assembles the email data of every recipient from the raw sheet rows.
+ *
+ * @param destinataires rows of `personnes!A:E` to send to: [nom, prénom, « prénom nom », email, statut]
+ * @param engagements rows of `engagements!A:B`: [personne, libellé de plage]
+ * @param contreparties rows of `contreparties!A:C`: [personne, contrepartie, remarque]
+ * @param fonctions rows of `fonctions!A:B`: [nom, type] with type `artiste` or `bénévole`
+ */
+export function buildEmailData (
+  destinataires: ReadonlyArray<any[]>,
+  engagements: ReadonlyArray<any[]>,
+  contreparties: ReadonlyArray<any[]>,
+  fonctions: ReadonlyArray<any[]>
+): ConfirmationEmailData[] {
+  const fonctionsArtiste = fonctions
+    .filter(rowHasValue(1, 'artiste'))
+    .map(getColumnAsRow(0))
+  const fonctionsBenevole = fonctions
+    .filter(rowHasValue(1, 'bénévole'))
+    .map(getColumnAsRow(0))
+
+  let data: ConfirmationEmailData[] = []
+  for (const d of destinataires) {
+    const listeEngagements = engagements
+      .filter(rowHasValue(0, d[2]))
+      .map(getColumnAsRow(1))
+    const listeContreparties = contreparties
+      .filter(rowHasValue(0, d[2]))
+      .map(row => (row[2] !== '' ? `${row[1]} (${row[2]})` : row[1]))
+    data.push({
+      personData: {
+        nom: d[0],
+        prenom: d[1],
+        email: d[3]
+      },
+      listeEngagements: listeEngagements,
+      listeContreparties: listeContreparties,
+      estArtiste: fonctionsArtiste.some(x =>
+        listeEngagements.join(',').includes(x)
+      ),
+      estBenevole: fonctionsBenevole.some(x =>
+        listeEngagements.join(',').includes(x)
+      )
+    })
+  }
+  return data
+}
+
+function collectData (): ConfirmationEmailData[] {
   // get data from spreadsheet
   const classeur = SpreadsheetApp.getActive()
   const personnesSheet = classeur.getSheetByName('personnes')
@@ -208,41 +259,12 @@ function collectData () {
   const fonctionsSheet = classeur.getSheetByName('fonctions')
   const fonctionsRange = fonctionsSheet?.getRange('A2:B')
   const fonctionsData = fonctionsRange?.getValues()
-  const fonctions = fonctionsData?.filter(rowHasContent)
-  const fonctionsArtiste = fonctions
-    ?.filter(rowHasValue(1, 'artiste'))
-    .map(getColumnAsRow(0))
-  const fonctionsBenevole = fonctions
-    ?.filter(rowHasValue(1, 'bénévole'))
-    .map(getColumnAsRow(0))
+  const fonctions = fonctionsData?.filter(rowHasContent) ?? []
 
-  let data = []
   if (destinataires && engagements && contreparties) {
-    for (const d of destinataires) {
-      const listeEngagements = engagements
-        .filter(rowHasValue(0, d[2]))
-        .map(getColumnAsRow(1))
-      const listeContreparties = contreparties
-        .filter(rowHasValue(0, d[2]))
-        .map(row => (row[2] !== '' ? `${row[1]} (${row[2]})` : row[1]))
-      data.push({
-        personData: {
-          nom: d[0],
-          prenom: d[1],
-          email: d[3]
-        },
-        listeEngagements: listeEngagements,
-        listeContreparties: listeContreparties,
-        estArtiste: fonctionsArtiste?.some(x =>
-          listeEngagements.join(',').includes(x)
-        ),
-        estBenevole: fonctionsBenevole?.some(x =>
-          listeEngagements.join(',').includes(x)
-        )
-      })
-    }
+    return buildEmailData(destinataires, engagements, contreparties, fonctions)
   }
-  return data
+  return []
 }
 
 function UpdateSendStatus (nom: string, prenom: string, status: string) {
