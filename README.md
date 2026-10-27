@@ -58,8 +58,14 @@ src/
   SelectEmailTemplate.html           boîte de choix du modèle
   emailReportTemplate.html           rapport d'envoi
   sheets-tools/                      sous-module git (outils réutilisables)
+test/
+  fakeSpreadsheet.ts                 faux classeur en mémoire pour les tests
+  *.test.ts                          tests unitaires (vitest)
+.github/workflows/ci.yml             typecheck + tests + build sur GitHub Actions
 appsscript.json                      manifeste Apps Script (scopes, fuseau)
 webpack.config.js                    bundle + copie des HTML vers dist/
+tsconfig.json                        compilation du bundle (src/ seulement)
+tsconfig.test.json                   vérification des types de src/ et test/
 .clasp.json                          identifiant du projet Apps Script
 .claspignore                         seuls dist/ et appsscript.json sont poussés
 ```
@@ -93,7 +99,22 @@ Scripts disponibles :
 |---|---|
 | `yarn build` / `yarn build:watch` | compile avec webpack |
 | `yarn push` / `yarn push:watch` | pousse avec clasp |
-| `yarn b`, `bw`, `p`, `pw` | alias historiques des quatre scripts ci-dessus |
+| `yarn test` / `yarn test:watch` | lance les tests unitaires avec vitest |
+| `yarn typecheck` | vérifie les types de `src/` et `test/` sans rien émettre |
+| `yarn b`, `bw`, `p`, `pw` | alias historiques des scripts build et push |
+
+## Tests
+
+Les calculs (libellés, planning, données de courriel, conditions du modèle)
+sont des fonctions pures, testées directement. Le code qui lit et écrit les
+feuilles est testé contre `test/fakeSpreadsheet.ts`, un faux classeur en
+mémoire qui reproduit les comportements de l'API Sheets dont dépend le code :
+plages ouvertes (`A2:F`) incluant les lignes vides, `getLastRow()` égal à la
+dernière ligne remplie, `setValues()` refusant un tableau de mauvaise taille.
+
+L'envoi effectif (`MailApp`, boîtes de dialogue) n'est pas couvert ; il se
+vérifie dans le classeur avec **Tester les emails**. GitHub Actions exécute
+`yarn typecheck`, `yarn test` et `yarn build` à chaque push.
 
 ## Déploiement et triggers
 
