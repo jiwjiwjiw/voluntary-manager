@@ -16,6 +16,13 @@ Dans le classeur, un menu **Actions** propose :
   changement) qui recalculent les colonnes dérivées, le planning et les listes
   déroulantes, puis fait un premier calcul complet.
 - **Recalculer** : refait le calcul complet à la main.
+- **Vérifier le classeur** : liste, feuille et ligne à l'appui, ce qui
+  fausserait l'envoi ou le planning : feuilles manquantes, noms incomplets,
+  homonymes, adresses manquantes ou invalides, fonctions inconnues, plages en
+  double ou sans nombre de places, dates absentes de `dates`, heures
+  incohérentes, plages sur-remplies, engagements ou contreparties vers une
+  personne ou une plage inexistante, engagements en double, personnes sans
+  engagement.
 - **Envoyer les emails** : envoie le courriel de confirmation à chaque personne
   dont le statut est `à envoyer`, puis passe le statut à `envoyé`. S'il y a
   plusieurs feuilles modèle, une boîte de dialogue demande laquelle utiliser.
@@ -64,6 +71,8 @@ src/
   updatePlages.ts                    calcule plages!F
   updatePlanning.ts                  calcule la feuille planning
   sendEmails.ts                      collecte des destinataires et envoi
+  checkWorkbook.ts                   vérification de cohérence du classeur
+  checkReportTemplate.html           rapport de vérification
   ConfirmationEmailTemplateParams.ts marqueurs et conditions du modèle
   EmailTemplateList.ts               détection des feuilles « modèle »
   SelectEmailTemplate.html           boîte de choix du modèle
