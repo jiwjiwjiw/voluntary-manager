@@ -1,10 +1,4 @@
-import { ConfirmationEmailTemplateParams } from './ConfirmationEmailTemplateParams'
-import { EmailTemplate } from './sheets-tools/EmailTemplate'
-import { Validation } from './sheets-tools/Validation'
-import { ValidationHandler } from './sheets-tools/ValidationHandler'
-import { updatePersonnes } from './updatePersonnes'
-import { updatePlages } from './updatePlages'
-import { updatePlanning } from './updatePlanning'
+import { updateModels } from './updateModels'
 import { testEmail, selectEmailTemplate, sendEmails } from './sendEmails'
 ;(global as any).onOpen = onOpen
 ;(global as any).testEmail = testEmail
@@ -14,53 +8,29 @@ import { testEmail, selectEmailTemplate, sendEmails } from './sendEmails'
 ;(global as any).onAuthorizeScript = onAuthorizeScript
 ;(global as any).updateModels = updateModels
 
-function updateValidation (
-  modifiedRange: GoogleAppsScript.Spreadsheet.Range | undefined = undefined
-) {
-  const validationHandler = ValidationHandler.getInstance()
-  validationHandler.add(
-    new Validation('contreparties', 'A2:A', 'personnes', 'C2:C')
-  )
-  validationHandler.add(new Validation('plages', 'A2:A', 'dates', 'A2:A'))
-  validationHandler.add(new Validation('plages', 'B2:B', 'fonctions', 'A2:A'))
-  validationHandler.add(
-    new Validation('engagements', 'A2:A', 'personnes', 'C2:C')
-  )
-  validationHandler.add(new Validation('engagements', 'B2:B', 'plages', 'F2:F'))
-  validationHandler.add(
-    new Validation('fonctions', 'B2:B', '', '', false, ['artiste', 'bénévole'])
-  )
-  validationHandler.add(
-    new Validation('personnes', 'E2:E', '', '', false, [
-      'à envoyer',
-      'envoyé',
-      'réception confirmée'
-    ])
-  )
-  new EmailTemplate(new ConfirmationEmailTemplateParams()).addValidation()
-  validationHandler.update(modifiedRange)
-}
-
 function onOpen () {
   const ui = SpreadsheetApp.getUi()
   ui.createMenu('Actions')
     .addItem('Autoriser le script', 'onAuthorizeScript')
+    .addItem('Recalculer', 'updateModels')
     .addItem('Envoyer les emails', 'selectEmailTemplate')
     .addItem('Tester les emails', 'testEmail')
     .addToUi()
 }
 
-function updateModels () {
-  updatePersonnes()
-  updatePlages()
-  updatePlanning()
-  updateValidation()
-}
-
+/**
+ * Installs the triggers for the current user and recomputes everything so
+ * that the derived columns and dropdowns are right away in place.
+ *
+ * ScriptApp.getProjectTriggers() only lists the triggers of the user who
+ * runs the script, so a second user clicking here installs a second set.
+ * One person should authorise the script.
+ */
 function onAuthorizeScript () {
   installOnOpenTriggerIfInexisting()
   installOnEditTriggerIfInexisting()
   installOnChangeTriggerIfInexisting()
+  updateModels()
 }
 
 function installOnEditTriggerIfInexisting () {
@@ -94,14 +64,9 @@ function checkIfTriggerExists (
   eventType: GoogleAppsScript.Script.EventType,
   handlerFunction: string
 ) {
-  const triggers = ScriptApp.getProjectTriggers()
-  let triggerExists = false
-  triggers.forEach(function (trigger) {
-    if (
+  return ScriptApp.getProjectTriggers().some(
+    trigger =>
       trigger.getEventType() === eventType &&
       trigger.getHandlerFunction() === handlerFunction
-    )
-      triggerExists = true
-  })
-  return triggerExists
+  )
 }
