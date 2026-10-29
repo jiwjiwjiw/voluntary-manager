@@ -3,6 +3,9 @@ import {
   currentUserEmail,
   htmlToPlainText,
   partitionRecipients,
+  previewEmailDialog,
+  renderEmail,
+  richestTestCase,
   selectEmailTemplate,
   sendEmails,
   testEmail,
@@ -247,15 +250,21 @@ describe('selectEmailTemplate', () => {
 })
 
 describe('testEmail', () => {
-  it('sends every test case to the current user without touching the sheet', () => {
+  it('sends the richest test case only, to the current user, without touching the sheet', () => {
     const { sent, personnes } = workbook([simpleTemplate()])
     installSession('me@example.org')
 
     testEmail()
 
-    expect(sent).toHaveLength(6)
-    expect(sent.every(m => m.to === 'me@example.org')).toBe(true)
+    expect(sent).toHaveLength(1)
+    expect(sent[0].to).toBe('me@example.org')
+    expect(sent[0].subject).toBe('Pour ArtisteEtBenevoleAvecContrepartie')
     expect(personnes.column(5)).toContain('à envoyer')
+  })
+
+  it('picks the case where every condition holds', () => {
+    const d = richestTestCase('x@y.z')
+    expect(d.estArtiste && d.estBenevole && d.listeContreparties.length > 0).toBe(true)
   })
 
   it('stops with an alert when the user address is unknown', () => {
@@ -329,5 +338,72 @@ describe('htmlToPlainText', () => {
         '<h1>Titre</h1><p>Bonjour <b>A &amp; B</b><br>suite</p><ul><li>un</li><li>deux</li></ul>'
       )
     ).toBe('Titre\nBonjour A & B\nsuite\n- un\n- deux')
+  })
+})
+
+describe('previewEmailDialog', () => {
+  it('lists the templates, the test cases and every named person', () => {
+    const { templates } = workbook([simpleTemplate()])
+
+    previewEmailDialog()
+
+    const t = templates[0]
+    expect(t.file).toBe('dist/PreviewEmail')
+    expect(t.template.templates).toEqual(['modèle courriel'])
+    expect(t.template.cas).toHaveLength(6)
+    expect(t.template.cas[0]).toEqual({ key: 'test:0', label: 'TEST : ArtisteSansContrepartie' })
+    expect(t.template.personnes.map((p: any) => p.label)).toEqual([
+      'Ana Roux',
+      'Ana Roux',
+      'Jean Martin',
+      'Léa Petit',
+      'Luc Noir',
+      'Marie Dupont',
+      'Paul Durand'
+    ])
+    expect(t.template.personnes[5]).toEqual({ key: '2', label: 'Marie Dupont' })
+  })
+
+  it('alerts without a template sheet', () => {
+    const { ui } = workbook()
+    previewEmailDialog()
+    expect(ui.alerts).toEqual(['Aucun modèle de message défini!'])
+  })
+})
+
+describe('renderEmail', () => {
+  const template = () =>
+    new FakeSheet('modèle courriel', [
+      headers,
+      ['sujet', '', 'Pour %PRENOM%'],
+      ['paragraphe', '', 'Bonjour %PRENOM%'],
+      ['élément de liste', 'est bénévole', 'bénévole'],
+      ['élément de liste', 'a au moins un code', 'code']
+    ])
+
+  it('renders the mail of a person of the sheet, whatever their status', () => {
+    workbook([template()])
+
+    expect(renderEmail('modèle courriel', '3')).toEqual({
+      subject: 'Pour Jean',
+      html: "<p><span style=''>Bonjour Jean</span></p>"
+    })
+  })
+
+  it('renders a test case', () => {
+    workbook([template()])
+    installSession('me@example.org')
+
+    const { subject, html } = renderEmail('modèle courriel', 'test:5')
+
+    expect(subject).toBe('Pour ArtisteEtBenevoleAvecContrepartie')
+    expect(html).toContain('bénévole')
+    expect(html).toContain('code')
+  })
+
+  it('throws a readable error for an unknown person or an empty template', () => {
+    workbook([template(), new FakeSheet('vide', [headers])])
+    expect(() => renderEmail('modèle courriel', '99')).toThrow('Personne introuvable.')
+    expect(() => renderEmail('vide', '2')).toThrow('vide')
   })
 })
