@@ -1,4 +1,5 @@
 import { rowHasContent } from './sheets-tools/helpers'
+import { estAEnvoyer } from './statuts'
 import { timeOfDayInMinutes } from './updatePlanning'
 
 /** The rows of the workbook, as displayed, with their sheet row numbers. */
@@ -108,7 +109,6 @@ export interface Issue {
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const TYPES_FONCTION = ['artiste', 'bénévole']
-export const STATUTS_A_ENVOYER = ['à envoyer']
 
 const lower = (s: string) => s.toLowerCase()
 
@@ -147,7 +147,7 @@ export function checkWorkbook (data: WorkbookData): Issue[] {
     } else if ((libelles.get(p.libelle) ?? 0) > 1) {
       erreur('personnes', p.row, `${nomAffiche} : homonyme, les engagements ne peuvent pas être distingués`)
     }
-    const aEnvoyer = STATUTS_A_ENVOYER.includes(lower(p.statut))
+    const aEnvoyer = estAEnvoyer(p.statut)
     if (p.email === '') {
       ;(aEnvoyer ? erreur : avertissement)('personnes', p.row, `${nomAffiche} : adresse email manquante`)
     } else if (!EMAIL_PATTERN.test(p.email)) {

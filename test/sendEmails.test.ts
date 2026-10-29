@@ -17,9 +17,11 @@ import {
   installHtmlService,
   installLockService,
   installMailApp,
+  installPropertiesService,
   installSession,
   installSpreadsheetApp
 } from './fakeSpreadsheet'
+import { empreinte } from '../src/empreintes'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -73,7 +75,8 @@ function workbook (
   const { sent } = installMailApp(options.quota ?? 100, options.rejects)
   const { templates } = installHtmlService()
   const lock = installLockService(options.locked)
-  return { personnes, ui, sent, templates, lock, spreadsheet }
+  const { values: properties } = installPropertiesService()
+  return { personnes, ui, sent, templates, lock, spreadsheet, properties }
 }
 
 const report = (templates: ReturnType<typeof workbook>['templates']) =>
@@ -105,6 +108,34 @@ describe('sendEmails', () => {
       homonymes: ['Ana Roux'],
       nomIncomplet: ['Blanc']
     })
+  })
+
+  it('remembers what each sent person was told', () => {
+    const { properties } = workbook([simpleTemplate()])
+
+    sendEmails('modèle courriel')
+
+    expect(JSON.parse(properties.empreintes)).toEqual({
+      'Marie Dupont': empreinte({
+        listeEngagements: ['01.01.2021 | bar | 20:00-21:00'],
+        listeContreparties: []
+      }),
+      'Luc Noir': empreinte({
+        listeEngagements: ['01.01.2021 | bar | 20:00-21:00'],
+        listeContreparties: []
+      })
+    })
+  })
+
+  it('also sends to people flagged « à renvoyer »', () => {
+    const { sent, personnes } = workbook([simpleTemplate()])
+    personnes.cells[2][4] = 'à renvoyer' // Jean Martin, who has no engagement
+    personnes.cells[4][4] = 'à renvoyer' // Léa Petit, no engagement either
+
+    sendEmails('modèle courriel')
+
+    expect(sent.map(m => m.to)).toEqual(['marie@example.org', 'luc@example.org'])
+    expect(personnes.cells[2][4]).toBe('à renvoyer')
   })
 
   it('substitutes the markers of the subject and adds a text body', () => {

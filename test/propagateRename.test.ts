@@ -1,10 +1,15 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { applyRenames, computeRenames } from '../src/propagateRename'
 import { updatePersonnes } from '../src/updatePersonnes'
 import { updatePlages } from '../src/updatePlages'
-import { FakeSheet, installSpreadsheetApp } from './fakeSpreadsheet'
+import {
+  FakeSheet,
+  installPropertiesService,
+  installSpreadsheetApp
+} from './fakeSpreadsheet'
 
 afterEach(() => vi.unstubAllGlobals())
+beforeEach(() => installPropertiesService())
 
 describe('computeRenames', () => {
   it('maps changed labels, row by row', () => {

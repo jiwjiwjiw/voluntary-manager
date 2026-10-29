@@ -3,6 +3,7 @@ import { stepsForSheet, updateModels } from '../src/updateModels'
 import {
   FakeSheet,
   installLockService,
+  installPropertiesService,
   installSpreadsheetApp
 } from './fakeSpreadsheet'
 
@@ -26,6 +27,7 @@ function workbook () {
   const sheets = [personnes, plages, engagements, planning, dates, fonctions, contreparties, modele]
   installSpreadsheetApp(sheets)
   const lock = installLockService()
+  installPropertiesService()
   return { personnes, plages, engagements, planning, modele, lock, sheets }
 }
 
@@ -35,8 +37,9 @@ const changeOf = (changeType: string) => ({ changeType }) as any
 describe('stepsForSheet', () => {
   it('maps each source sheet to what it feeds', () => {
     expect(stepsForSheet('personnes')).toEqual(['personnes'])
-    expect(stepsForSheet('plages')).toEqual(['plages', 'planning'])
-    expect(stepsForSheet('engagements')).toEqual(['planning'])
+    expect(stepsForSheet('plages')).toEqual(['plages', 'planning', 'statuts'])
+    expect(stepsForSheet('engagements')).toEqual(['planning', 'statuts'])
+    expect(stepsForSheet('contreparties')).toEqual(['statuts'])
     expect(stepsForSheet('planning')).toEqual([])
     expect(stepsForSheet('modèle courriel')).toEqual([])
     expect(stepsForSheet('dates')).toEqual([])
@@ -103,6 +106,7 @@ describe('updateModels', () => {
     const second = new FakeSheet('modèle 2', [['type', 'condition', 'texte']])
     installSpreadsheetApp([...sheets, second])
     installLockService()
+    installPropertiesService()
 
     updateModels()
 

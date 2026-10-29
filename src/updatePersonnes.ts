@@ -1,3 +1,4 @@
+import { EmpreintesStore } from './empreintes'
 import { applyRenames, computeRenames } from './propagateRename'
 
 /**
@@ -25,4 +26,9 @@ export function updatePersonnes () {
   const renames = computeRenames(oldLabels, newLabels)
   applyRenames(spreadsheet.getSheetByName('engagements'), 'A2:A', renames)
   applyRenames(spreadsheet.getSheetByName('contreparties'), 'A2:A', renames)
+  if (renames.size > 0) {
+    const store = new EmpreintesStore()
+    store.rename(renames)
+    store.save()
+  }
 }

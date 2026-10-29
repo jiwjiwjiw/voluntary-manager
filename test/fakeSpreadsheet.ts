@@ -413,6 +413,26 @@ export function installLockService (alreadyLocked = false) {
   return state
 }
 
+/** Stubs PropertiesService with an in-memory document property store. */
+export function installPropertiesService (initial: Record<string, string> = {}) {
+  const values = { ...initial }
+  const properties = {
+    getProperty: (key: string) => (key in values ? values[key] : null),
+    setProperty: (key: string, value: string) => {
+      values[key] = value
+      return properties
+    },
+    deleteProperty: (key: string) => {
+      delete values[key]
+      return properties
+    }
+  }
+  vi.stubGlobal('PropertiesService', {
+    getDocumentProperties: () => properties
+  })
+  return { values, properties }
+}
+
 /** Stubs Session with the given active and effective user addresses. */
 export function installSession (activeEmail: string, effectiveEmail = activeEmail) {
   vi.stubGlobal('Session', {
