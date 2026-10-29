@@ -34,8 +34,12 @@ Dans le classeur, un menu **Actions** propose :
   homonymes (même prénom et nom, impossibles à distinguer), les noms
   incomplets et les personnes sans engagement ; tous gardent leur statut.
   Le sujet accepte `%PRENOM%`, `%NOM%` et `%EMAIL%`.
-- **Tester les emails** : envoie à l'utilisateur courant un jeu de courriels
-  couvrant toutes les combinaisons de conditions du modèle.
+- **Aperçu d'un courriel** : affiche, sans rien envoyer, le courriel qu'une
+  personne du classeur recevrait, ou l'un des six cas de test couvrant toutes
+  les combinaisons de conditions du modèle.
+- **Tester les emails** : envoie réellement à l'utilisateur courant le cas de
+  test le plus complet (artiste et bénévole avec contreparties), pour vérifier
+  l'envoi et le rendu dans un vrai client de messagerie.
 
 ## Feuilles attendues dans le classeur
 
@@ -86,7 +90,8 @@ src/
   checkReportTemplate.html           rapport de vérification
   ConfirmationEmailTemplateParams.ts marqueurs et conditions du modèle
   EmailTemplateList.ts               détection des feuilles « modèle »
-  SelectEmailTemplate.html           boîte de choix du modèle
+  SelectEmailTemplate.html           dialogue de confirmation d'envoi
+  PreviewEmail.html                  aperçu d'un courriel
   emailReportTemplate.html           rapport d'envoi
   sheets-tools/                      sous-module git (outils réutilisables)
 test/
@@ -156,9 +161,8 @@ vérifie dans le classeur avec **Tester les emails**. GitHub Actions exécute
 
 ## Déploiement et triggers
 
-Les fichiers HTML sont poussés sous le nom `dist/SelectEmailTemplate` et
-`dist/emailReportTemplate` ; le code les charge avec ces noms exacts via
-`HtmlService.createTemplateFromFile`.
+Les fichiers HTML de `src/` sont poussés sous `dist/<nom>` ; le code les
+charge avec ces noms exacts via `HtmlService.createTemplateFromFile`.
 
 Les déclencheurs installables appartiennent à l'utilisateur qui clique sur
 **Autoriser le script**. Le script ne voit que ses propres déclencheurs :

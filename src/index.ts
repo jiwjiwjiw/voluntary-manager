@@ -1,5 +1,11 @@
 import { updateModels } from './updateModels'
-import { testEmail, selectEmailTemplate, sendEmails } from './sendEmails'
+import {
+  previewEmailDialog,
+  renderEmail,
+  selectEmailTemplate,
+  sendEmails,
+  testEmail
+} from './sendEmails'
 import { verifierClasseur } from './checkWorkbook'
 ;(global as any).onOpen = onOpen
 ;(global as any).verifierClasseur = verifierClasseur
@@ -7,6 +13,9 @@ import { verifierClasseur } from './checkWorkbook'
 ;(global as any).selectEmailTemplate = selectEmailTemplate
 // Called by the SelectEmailTemplate dialog through google.script.run.
 ;(global as any).sendEmails = sendEmails
+;(global as any).previewEmailDialog = previewEmailDialog
+// Called by the PreviewEmail dialog through google.script.run.
+;(global as any).renderEmail = renderEmail
 ;(global as any).onAuthorizeScript = onAuthorizeScript
 ;(global as any).updateModels = updateModels
 
@@ -17,6 +26,7 @@ function onOpen () {
     .addItem('Recalculer', 'updateModels')
     .addItem('Vérifier le classeur', 'verifierClasseur')
     .addItem('Envoyer les emails', 'selectEmailTemplate')
+    .addItem("Aperçu d'un courriel", 'previewEmailDialog')
     .addItem('Tester les emails', 'testEmail')
     .addToUi()
 }

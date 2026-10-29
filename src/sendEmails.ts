@@ -107,6 +107,24 @@ export function currentUserEmail (): string {
   )
 }
 
+/**
+ * The test case that exercises every conditional block at once: an artist
+ * who is also a volunteer and has contreparties.
+ */
+export function richestTestCase (email: string): ConfirmationEmailData {
+  const cases = testEmailData(email)
+  return (
+    cases.find(
+      d => d.estArtiste && d.estBenevole && d.listeContreparties.length > 0
+    ) ?? cases[cases.length - 1]
+  )
+}
+
+/**
+ * Sends one real mail, the richest test case, to the current user, so that
+ * the sending itself and the rendering in a real mail client can be checked.
+ * The other cases can be looked at with « Aperçu d'un courriel ».
+ */
 export function testEmail () {
   const ownEmail = currentUserEmail()
   if (!ownEmail) {
@@ -116,7 +134,65 @@ export function testEmail () {
     return
   }
   const template = new EmailTemplate(new ConfirmationEmailTemplateParams())
-  sendEmails2(template, testEmailData(ownEmail))
+  sendEmails2(template, [richestTestCase(ownEmail)])
+}
+
+/** Key of a test case in the preview dialog. */
+const TEST_KEY_PREFIX = 'test:'
+
+/** Menu entry: dialog to render the mail of a person or of a test case. */
+export function previewEmailDialog () {
+  const templates = new EmailTemplateList(SpreadsheetApp.getActive()).list.map(
+    sheet => sheet.getName()
+  )
+  if (templates.length === 0) {
+    SpreadsheetApp.getUi().alert('Aucun modèle de message défini!')
+    return
+  }
+  const personnes = collectData(false)
+    .data.filter(d => d.libelle !== '' && d.row !== undefined)
+    .map(d => ({ key: String(d.row), label: displayName(d) }))
+    .sort((a, b) => a.label.localeCompare(b.label))
+  const cas = testEmailData('').map((d, index) => ({
+    key: `${TEST_KEY_PREFIX}${index}`,
+    label: `TEST : ${d.personData.prenom}`
+  }))
+  const htmlTemplate = HtmlService.createTemplateFromFile('dist/PreviewEmail')
+  htmlTemplate.templates = templates
+  htmlTemplate.personnes = personnes
+  htmlTemplate.cas = cas
+  const html = htmlTemplate.evaluate().setWidth(760).setHeight(600)
+  SpreadsheetApp.getUi().showModalDialog(html, "Aperçu d'un courriel")
+}
+
+/**
+ * Renders the mail of one recipient without sending it. Called by the
+ * preview dialog through google.script.run. `key` is a row of `personnes`
+ * or `test:<index>` for one of the test cases.
+ */
+export function renderEmail (
+  sheetName: string,
+  key: string
+): { subject: string; html: string } {
+  const template = new EmailTemplate(
+    new ConfirmationEmailTemplateParams(sheetName)
+  )
+  if (template.isEmpty()) {
+    throw new Error(`Le modèle « ${sheetName} » est vide ou introuvable.`)
+  }
+  let d: ConfirmationEmailData | undefined
+  if (key.startsWith(TEST_KEY_PREFIX)) {
+    const email = currentUserEmail() || 'test@example.org'
+    d = testEmailData(email)[Number(key.slice(TEST_KEY_PREFIX.length))]
+  } else {
+    d = collectData(false).data.find(x => x.row === Number(key))
+  }
+  if (!d) throw new Error('Personne introuvable.')
+  const { subject, html } = template.constructHtml(d)
+  return {
+    subject: template.insertSubjectData(subject, d),
+    html: template.insertData(html, d)
+  }
 }
 
 /**
@@ -371,7 +447,11 @@ export function buildEmailData (
   return data
 }
 
-function collectData (): {
+/**
+ * Reads the workbook into email data. With `onlyToSend`, only the people
+ * whose status is `à envoyer`; otherwise everyone (for previews).
+ */
+function collectData (onlyToSend = true): {
   data: ConfirmationEmailData[]
   libelles: string[]
 } {
@@ -384,7 +464,9 @@ function collectData (): {
     .map(row => String(row[2] ?? ''))
   const destinataires = personnesData
     .map((row, index) => [...row, index + 2]) // keep the sheet row
-    .filter(row => sameText(row[4], STATUS_A_ENVOYER))
+    .filter(row =>
+      onlyToSend ? sameText(row[4], STATUS_A_ENVOYER) : rowHasContent(row.slice(0, 5))
+    )
   const engagements =
     classeur
       .getSheetByName('engagements')
