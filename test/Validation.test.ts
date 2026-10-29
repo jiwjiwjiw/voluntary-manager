@@ -5,32 +5,35 @@ import { FakeSheet, installSpreadsheetApp } from './fakeSpreadsheet'
 afterEach(() => vi.unstubAllGlobals())
 
 describe('Validation', () => {
-  it('builds the list from the validating column plus the extra values', () => {
+  it('references the validating range when the values come from a sheet', () => {
     const plages = new FakeSheet('plages', [
       ['date', 'fonction', 'début', 'fin', 'nombre', 'libellé'],
-      ['', '', '', '', '', 'p1'],
-      ['', '', '', '', '', 'p2']
+      ['', '', '', '', '', 'p1']
     ])
     const engagements = new FakeSheet('engagements', [['personne', 'plage']])
     installSpreadsheetApp([plages, engagements])
 
-    new Validation('engagements', 'B2:B', 'plages', 'F2:F', false, ['x']).update()
+    new Validation('engagements', 'B2:B', 'plages', 'F2:F').update()
 
     expect(engagements.validations).toHaveLength(1)
     const { rule, column } = engagements.validations[0]
     expect(column).toBe(2)
     expect(rule.allowInvalid).toBe(false)
-    expect(rule.values).toEqual(['p1', 'p2', 'x'])
+    expect(rule.range).toBe(`plages!2:${plages.getMaxRows()}/6:6`)
+    expect(rule.showDropdown).toBe(true)
+    expect(rule.values).toBeUndefined()
   })
 
-  it('leaves out empty cells and duplicates', () => {
+  it('builds a list, without empty cells or duplicates, when extra values are added', () => {
     const dates = new FakeSheet('dates', [['date'], ['d1'], [''], ['d1'], ['d2']])
     const plages = new FakeSheet('plages', [['date']])
     installSpreadsheetApp([dates, plages])
 
-    new Validation('plages', 'A2:A', 'dates', 'A2:A').update()
+    new Validation('plages', 'A2:A', 'dates', 'A2:A', false, ['x', 'd2']).update()
 
-    expect(plages.validations[0].rule.values).toEqual(['d1', 'd2'])
+    const { rule } = plages.validations[0]
+    expect(rule.values).toEqual(['d1', 'd2', 'x'])
+    expect(rule.range).toBeUndefined()
   })
 
   it('works with a static list only', () => {
@@ -55,9 +58,19 @@ describe('Validation', () => {
     expect(plages.validations).toHaveLength(1)
   })
 
-  it('alerts instead of throwing when the validated sheet is missing', () => {
+  it('writes nothing, without any UI call, when the validated sheet is missing', () => {
     const { ui } = installSpreadsheetApp([])
     expect(() => new Validation('absente', 'A2:A', '', '').update()).not.toThrow()
-    expect(ui.alerts).toHaveLength(1)
+    expect(ui.alerts).toEqual([])
+  })
+
+  it('leaves the existing rule alone when the validating sheet is missing', () => {
+    const engagements = new FakeSheet('engagements', [['personne', 'plage']])
+    const { ui } = installSpreadsheetApp([engagements])
+
+    new Validation('engagements', 'A2:A', 'personnes', 'C2:C').update()
+
+    expect(engagements.validations).toHaveLength(0)
+    expect(ui.alerts).toEqual([])
   })
 })
