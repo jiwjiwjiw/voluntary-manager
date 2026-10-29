@@ -1,3 +1,4 @@
+import { updatePlanningPersonnes } from './planningPersonnes'
 import { rowHasContent } from './sheets-tools/helpers'
 
 /**
@@ -89,14 +90,14 @@ export function updatePlanning () {
   const planningSheet = spreadsheet.getSheetByName('planning')
   const plagesRange = plagesSheet?.getRange('A2:F')
   const engagementsRange = engagementsSheet?.getRange('A2:B')
-  const plagesData = plagesRange
+  const plagesSorted = plagesRange
     ?.getValues()
     .filter(rowHasContent)
     .sort(comparePlages)
-    .map(row => [row[4], row[5]]) // [nombre de personnes, libellé]
+  const plagesData = plagesSorted?.map(row => [row[4], row[5]]) // [nombre de personnes, libellé]
   const engagementsData = engagementsRange?.getValues().filter(rowHasContent)
 
-  if (plagesData && engagementsData && planningSheet) {
+  if (plagesSorted && plagesData && engagementsData && planningSheet) {
     const output = computePlanning(plagesData, engagementsData)
 
     // write computed data to spreadsheet
@@ -109,5 +110,12 @@ export function updatePlanning () {
       }
       planningSheet.getRange(2, 1, output.length, 2).setValues(output)
     }
+
+    // the same data seen from each person
+    updatePlanningPersonnes(
+      spreadsheet,
+      plagesSorted.map(row => String(row[5] ?? '')),
+      engagementsData
+    )
   }
 }

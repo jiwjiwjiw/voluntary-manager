@@ -196,6 +196,10 @@ export class FakeRange {
     return this.setValue('')
   }
 
+  setNumberFormat () {
+    return this
+  }
+
   setDataValidation (rule: any) {
     this.sheet.validations.push({
       row: this.row,
@@ -258,6 +262,30 @@ export class FakeSheet {
     return this
   }
 
+  insertColumnsAfter (afterPosition: number, howMany: number) {
+    if (afterPosition !== this.maxColumns) {
+      throw new Error('The fake only supports appending columns at the end')
+    }
+    this.maxColumns += howMany
+    return this
+  }
+
+  /**
+   * The rows holding data, header excluded, trailing empty rows and the
+   * trailing empty cells of each row removed.
+   */
+  rows (): any[][] {
+    const out = this.getRange(2, 1, this.maxRows - 1, this.maxColumns)
+      .getValues()
+      .map(row => {
+        const trimmed = [...row]
+        while (trimmed.length && trimmed[trimmed.length - 1] === '') trimmed.pop()
+        return trimmed
+      })
+    while (out.length && out[out.length - 1].length === 0) out.pop()
+    return out
+  }
+
   write (row: number, column: number, value: Cell) {
     if (row > this.maxRows || column > this.maxColumns) {
       throw new Error(
@@ -318,6 +346,13 @@ export class FakeSpreadsheet {
 
   getSheetByName (name: string): FakeSheet | null {
     return this.sheets.find(s => s.getName() === name) ?? null
+  }
+
+  /** A new sheet with the default grid of a real one, scaled down. */
+  insertSheet (name: string): FakeSheet {
+    const sheet = new FakeSheet(name, [], { maxRows: 20, maxColumns: 26 })
+    this.sheets.push(sheet)
+    return sheet
   }
 }
 
