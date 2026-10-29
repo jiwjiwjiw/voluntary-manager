@@ -1,3 +1,8 @@
+const TEMPLATE_HEADERS = ['type', 'condition', 'texte']
+
+const normalise = (value: unknown) => String(value).trim().toLowerCase()
+
+/** The sheets of the workbook that hold an email template. */
 export class EmailTemplateList {
   public list: Array<GoogleAppsScript.Spreadsheet.Sheet> = []
 
@@ -7,19 +12,23 @@ export class EmailTemplateList {
 
   private createList () {
     this.spreadsheet.getSheets().forEach(sheet => {
-      if (this.isTemplate(sheet)) {
+      if (EmailTemplateList.isTemplate(sheet)) {
         this.list.push(sheet)
       }
     })
   }
 
-  private isTemplate (sheet: GoogleAppsScript.Spreadsheet.Sheet): boolean {
-    const maxColumnsOk = sheet.getMaxColumns() === 3
-    const firstColumnNameOk = sheet.getRange(1, 1).getValue() === 'Type'
-    const secondColumnNameOk = sheet.getRange(1, 2).getValue() === 'Condition'
-    const thirdColumnNameOk = sheet.getRange(1, 3).getValue() === 'Texte'
-    return (
-      maxColumnsOk && firstColumnNameOk && secondColumnNameOk && thirdColumnNameOk
+  /**
+   * A template sheet is recognised by its three headers « Type »,
+   * « Condition », « Texte » (case and surrounding spaces ignored). The
+   * number of columns does not matter: a sheet created from scratch has
+   * 26 of them.
+   */
+  static isTemplate (sheet: GoogleAppsScript.Spreadsheet.Sheet): boolean {
+    if (sheet.getMaxColumns() < TEMPLATE_HEADERS.length) return false
+    const headers = sheet.getRange(1, 1, 1, TEMPLATE_HEADERS.length).getValues()[0]
+    return TEMPLATE_HEADERS.every(
+      (header, index) => normalise(headers[index]) === header
     )
   }
 }
