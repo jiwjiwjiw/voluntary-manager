@@ -14,7 +14,8 @@ Dans le classeur, un menu **Actions** propose :
 
 - **Autoriser le script** : installe les déclencheurs (ouverture, édition,
   changement) qui recalculent les colonnes dérivées, le planning et les listes
-  déroulantes.
+  déroulantes, puis fait un premier calcul complet.
+- **Recalculer** : refait le calcul complet à la main.
 - **Envoyer les emails** : envoie le courriel de confirmation à chaque personne
   dont le statut est `à envoyer`, puis passe le statut à `envoyé`. S'il y a
   plusieurs feuilles modèle, une boîte de dialogue demande laquelle utiliser.
@@ -57,7 +58,8 @@ condition d'inclusion (vide = toujours inclus) parmi : `a au moins un code`,
 
 ```
 src/
-  index.ts                           point d'entrée : menu, déclencheurs, validations
+  index.ts                           point d'entrée : menu, déclencheurs
+  updateModels.ts                    recalcul des données dérivées et validations
   updatePersonnes.ts                 calcule personnes!C
   updatePlages.ts                    calcule plages!F
   updatePlanning.ts                  calcule la feuille planning
@@ -139,8 +141,16 @@ Les fichiers HTML sont poussés sous le nom `dist/SelectEmailTemplate` et
 `HtmlService.createTemplateFromFile`.
 
 Les déclencheurs installables appartiennent à l'utilisateur qui clique sur
-**Autoriser le script**. Ils appellent `updateModels`, qui est aussi
-exécutable à la main depuis l'éditeur Apps Script.
+**Autoriser le script**. Le script ne voit que ses propres déclencheurs :
+une seule personne doit autoriser le script, sinon chaque édition déclenche
+autant de recalculs que de personnes l'ayant fait.
+
+Les déclencheurs appellent `updateModels`. À l'ouverture et sur **Recalculer**,
+tout est recalculé. À chaque édition, seul ce qui dépend de la feuille modifiée
+l'est : `personnes` → colonne C, `plages` → colonne F et planning,
+`engagements` → planning ; les autres feuilles ne déclenchent rien. Les listes
+déroulantes référencent directement leurs plages et se mettent à jour seules.
+Un seul recalcul tourne à la fois (verrou sur le document).
 
 ## Licence
 
