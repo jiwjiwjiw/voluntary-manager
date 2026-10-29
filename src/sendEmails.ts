@@ -10,6 +10,7 @@ import {
   rowHasValue
 } from './sheets-tools/helpers'
 
+import { readConfig } from './config'
 import { empreinte, EmpreintesStore } from './empreintes'
 import { estAEnvoyer, STATUT_ENVOYE } from './statuts'
 
@@ -339,6 +340,7 @@ function sendEmails2 (
     const spreadsheet = SpreadsheetApp.getActive()
     spreadsheet.toast(`Envoi de ${envois.length} courriel(s)…`, 'Envoi en cours')
     const personnesSheet = spreadsheet.getSheetByName('personnes')
+    const config = readConfig(spreadsheet)
     for (const d of envois) {
       const { subject, html } = template.constructHtml(d)
       const htmlBody = template.insertData(html, d)
@@ -347,7 +349,8 @@ function sendEmails2 (
           to: d.personData.email.trim(),
           subject: template.insertSubjectData(subject, d),
           body: htmlToPlainText(htmlBody),
-          htmlBody
+          htmlBody,
+          ...config
         })
       } catch (e) {
         // One bad address must not stop the others.

@@ -56,9 +56,17 @@ La première ligne de chaque feuille est une ligne d'en-tête.
 | `dates` | A date | Liste des dates autorisées pour `plages!A`. |
 | `planning` | **A plage, B personnes** | Feuille entièrement calculée, triée par date puis heure de début. `?` marque une place vacante. |
 | `modèle courriel` | A type, B condition, C texte | Modèle du courriel, une ligne par bloc. |
+| `config` (facultative) | A clé, B valeur | Réglages de l'expéditeur, voir ci-dessous. |
 
 Une personne est « artiste » (resp. « bénévole ») dès qu'une de ses plages a
 une fonction de ce type dans `fonctions`.
+
+La feuille `config`, si elle existe, accepte trois clés (casse indifférente) :
+`nom de l'expéditeur` (nom affiché, l'adresse reste celle de l'utilisateur qui
+envoie), `adresse de réponse` (où arrivent les réponses) et `copie cachée`
+(une adresse mise en copie cachée de chaque courriel, par exemple pour garder
+une trace, car les courriels envoyés par le script n'apparaissent pas dans le
+dossier « Envoyés » de Gmail).
 
 À chaque envoi, le script mémorise (dans les propriétés du document, hors des
 feuilles) ce que chaque personne a reçu : ses engagements et contreparties.
@@ -90,6 +98,7 @@ src/
   updateStatuts.ts                   passe « à renvoyer » les confirmations obsolètes
   empreintes.ts                      mémoire de ce que chaque personne a reçu
   statuts.ts                         valeurs du statut d'envoi
+  config.ts                          lecture de la feuille config
   updatePersonnes.ts                 calcule personnes!C
   updatePlages.ts                    calcule plages!F
   propagateRename.ts                 reporte un libellé modifié dans les références
