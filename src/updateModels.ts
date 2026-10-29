@@ -3,11 +3,11 @@ import { EmailTemplateList } from './EmailTemplateList'
 import { EmailTemplate } from './sheets-tools/EmailTemplate'
 import { Validation } from './sheets-tools/Validation'
 import { ValidationHandler } from './sheets-tools/ValidationHandler'
+import { STATUTS_ENVOI } from './statuts'
 import { updatePersonnes } from './updatePersonnes'
 import { updatePlages } from './updatePlages'
 import { updatePlanning } from './updatePlanning'
-
-export const STATUTS_ENVOI = ['à envoyer', 'envoyé', 'réception confirmée']
+import { updateStatuts } from './updateStatuts'
 
 /**
  * Installs every dropdown of the workbook. The rules that reference a
@@ -40,15 +40,28 @@ export function updateValidation () {
   validationHandler.update()
 }
 
-export type UpdateStep = 'personnes' | 'plages' | 'planning' | 'validation'
+export type UpdateStep =
+  | 'personnes'
+  | 'plages'
+  | 'planning'
+  | 'statuts'
+  | 'validation'
 
-const ALL_STEPS: UpdateStep[] = ['personnes', 'plages', 'planning', 'validation']
+const ALL_STEPS: UpdateStep[] = [
+  'personnes',
+  'plages',
+  'planning',
+  'statuts',
+  'validation'
+]
 
 /**
  * The recomputations an edit on the given sheet calls for:
  * - `personnes` feeds its own column C;
- * - `plages` feeds its own column F and the planning;
- * - `engagements` feeds the planning;
+ * - `plages` feeds its own column F, the planning and, through the labels,
+ *   what people were told;
+ * - `engagements` feeds the planning and what people were told;
+ * - `contreparties` feeds what people were told;
  * - the other sheets feed nothing (dropdowns reference their ranges).
  */
 export function stepsForSheet (sheetName: string): UpdateStep[] {
@@ -56,9 +69,11 @@ export function stepsForSheet (sheetName: string): UpdateStep[] {
     case 'personnes':
       return ['personnes']
     case 'plages':
-      return ['plages', 'planning']
+      return ['plages', 'planning', 'statuts']
     case 'engagements':
-      return ['planning']
+      return ['planning', 'statuts']
+    case 'contreparties':
+      return ['statuts']
     default:
       return []
   }
@@ -96,6 +111,7 @@ export function updateModels (e?: TriggerEvent) {
     if (steps.includes('personnes')) updatePersonnes()
     if (steps.includes('plages')) updatePlages()
     if (steps.includes('planning')) updatePlanning()
+    if (steps.includes('statuts')) updateStatuts()
     if (steps.includes('validation')) updateValidation()
   } finally {
     lock.releaseLock()

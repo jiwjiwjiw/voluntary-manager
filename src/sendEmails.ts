@@ -10,10 +10,11 @@ import {
   rowHasValue
 } from './sheets-tools/helpers'
 
+import { empreinte, EmpreintesStore } from './empreintes'
+import { estAEnvoyer, STATUT_ENVOYE } from './statuts'
+
 /** Column of the send status in `personnes` (E). */
-const STATUS_COLUMN = 5
-export const STATUS_A_ENVOYER = 'à envoyer'
-export const STATUS_ENVOYE = 'envoyé'
+export const STATUS_COLUMN = 5
 
 /** What the confirmation dialog shows before anything is sent. */
 export interface SendSummary {
@@ -333,6 +334,7 @@ function sendEmails2 (
     erreurs: [],
     ...nonEnvoyes
   }
+  const store = new EmpreintesStore()
   try {
     const spreadsheet = SpreadsheetApp.getActive()
     spreadsheet.toast(`Envoi de ${envois.length} courriel(s)…`, 'Envoi en cours')
@@ -358,10 +360,13 @@ function sendEmails2 (
       }
       report.envoyes++
       if (d.row !== undefined) {
-        personnesSheet?.getRange(d.row, STATUS_COLUMN).setValue(STATUS_ENVOYE)
+        personnesSheet?.getRange(d.row, STATUS_COLUMN).setValue(STATUT_ENVOYE)
+        // Remember what was confirmed, to flag later changes « à renvoyer ».
+        store.set(d.libelle, empreinte(d))
       }
     }
   } finally {
+    store.save()
     lock.releaseLock()
   }
 
@@ -449,10 +454,11 @@ export function buildEmailData (
 
 /**
  * Reads the workbook into email data. With `onlyToSend`, only the people
- * whose status is `à envoyer`; otherwise everyone (for previews).
+ * whose status is `à envoyer` or `à renvoyer`; otherwise everyone (for
+ * previews and status updates), each with their `statut`.
  */
-function collectData (onlyToSend = true): {
-  data: ConfirmationEmailData[]
+export function collectData (onlyToSend = true): {
+  data: Array<ConfirmationEmailData & { statut: string }>
   libelles: string[]
 } {
   // get data from spreadsheet
@@ -465,7 +471,7 @@ function collectData (onlyToSend = true): {
   const destinataires = personnesData
     .map((row, index) => [...row, index + 2]) // keep the sheet row
     .filter(row =>
-      onlyToSend ? sameText(row[4], STATUS_A_ENVOYER) : rowHasContent(row.slice(0, 5))
+      onlyToSend ? estAEnvoyer(row[4]) : rowHasContent(row.slice(0, 5))
     )
   const engagements =
     classeur
@@ -492,14 +498,12 @@ function collectData (onlyToSend = true): {
       .getDisplayValues()
       .filter(rowHasContent) ?? []
 
-  return {
-    data: buildEmailData(
-      destinataires,
-      engagements,
-      contreparties,
-      fonctions,
-      plages
-    ),
-    libelles
-  }
+  const data = buildEmailData(
+    destinataires,
+    engagements,
+    contreparties,
+    fonctions,
+    plages
+  ).map((d, index) => ({ ...d, statut: String(destinataires[index][4] ?? '') }))
+  return { data, libelles }
 }

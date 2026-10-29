@@ -24,7 +24,7 @@ Dans le classeur, un menu **Actions** propose :
   personne ou une plage inexistante, engagements en double, personnes sans
   engagement.
 - **Envoyer les emails** : ouvre un dialogue qui annonce le nombre de
-  courriels à envoyer (statut `à envoyer`), les personnes qui ne recevront
+  courriels à envoyer (statuts `à envoyer` et `à renvoyer`), les personnes qui ne recevront
   rien et le quota journalier restant, puis demande le modèle à utiliser.
   Après confirmation, chaque courriel envoyé passe le statut à `envoyé`. Si le
   quota est inférieur au nombre de courriels, les premiers (ordre de la
@@ -48,7 +48,7 @@ La première ligne de chaque feuille est une ligne d'en-tête.
 
 | Feuille | Colonnes | Remarques |
 |---|---|---|
-| `personnes` | A nom, B prénom, **C « prénom nom »**, D email, E statut d'envoi | C est calculée. E vaut `à envoyer`, `envoyé` ou `réception confirmée`. |
+| `personnes` | A nom, B prénom, **C « prénom nom »**, D email, E statut d'envoi | C est calculée. E vaut `à envoyer`, `envoyé`, `réception confirmée` ou `à renvoyer`. |
 | `plages` | A date, B fonction, C début, D fin, E nombre de personnes, **F libellé** | F est calculée : `date \| fonction \| début-fin`. |
 | `engagements` | A personne, B plage | A référence `personnes!C`, B référence `plages!F`. |
 | `contreparties` | A personne, B contrepartie, C remarque | A référence `personnes!C`. |
@@ -59,6 +59,12 @@ La première ligne de chaque feuille est une ligne d'en-tête.
 
 Une personne est « artiste » (resp. « bénévole ») dès qu'une de ses plages a
 une fonction de ce type dans `fonctions`.
+
+À chaque envoi, le script mémorise (dans les propriétés du document, hors des
+feuilles) ce que chaque personne a reçu : ses engagements et contreparties.
+Si l'un d'eux change ensuite, y compris par un changement d'horaire de plage,
+le statut de la personne passe de `envoyé` ou `réception confirmée` à
+`à renvoyer`, et **Envoyer les emails** l'inclut dans le prochain envoi.
 
 Les libellés calculés (`personnes!C`, `plages!F`) servent de clés dans
 `engagements` et `contreparties`. Quand un nom ou une plage est modifié, le
@@ -81,6 +87,9 @@ condition d'inclusion (vide = toujours inclus) parmi : `a au moins un code`,
 src/
   index.ts                           point d'entrée : menu, déclencheurs
   updateModels.ts                    recalcul des données dérivées et validations
+  updateStatuts.ts                   passe « à renvoyer » les confirmations obsolètes
+  empreintes.ts                      mémoire de ce que chaque personne a reçu
+  statuts.ts                         valeurs du statut d'envoi
   updatePersonnes.ts                 calcule personnes!C
   updatePlages.ts                    calcule plages!F
   propagateRename.ts                 reporte un libellé modifié dans les références
@@ -171,8 +180,9 @@ autant de recalculs que de personnes l'ayant fait.
 
 Les déclencheurs appellent `updateModels`. À l'ouverture et sur **Recalculer**,
 tout est recalculé. À chaque édition, seul ce qui dépend de la feuille modifiée
-l'est : `personnes` → colonne C, `plages` → colonne F et planning,
-`engagements` → planning ; les autres feuilles ne déclenchent rien. Les listes
+l'est : `personnes` → colonne C, `plages` → colonne F, planning et statuts,
+`engagements` → planning et statuts, `contreparties` → statuts ; les autres
+feuilles ne déclenchent rien. Les listes
 déroulantes référencent directement leurs plages et se mettent à jour seules.
 Un seul recalcul tourne à la fois (verrou sur le document).
 
