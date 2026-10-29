@@ -15,26 +15,50 @@ const STATUS_COLUMN = 5
 export const STATUS_A_ENVOYER = 'à envoyer'
 export const STATUS_ENVOYE = 'envoyé'
 
-export function selectEmailTemplate () {
-  const templateList = new EmailTemplateList(SpreadsheetApp.getActive()).list
-  if (templateList.length == 0) {
-    SpreadsheetApp.getUi().alert('Aucun modèle de message défini!')
-  } else if (templateList.length == 1) {
-    sendEmails(templateList[0].getName())
-  } else {
-    const htmlTemplate = HtmlService.createTemplateFromFile(
-      'dist/SelectEmailTemplate'
-    )
-    htmlTemplate.templateNames = templateList.map(x => x.getName())
-    const html = htmlTemplate
-      .evaluate()
-      .setWidth(320)
-      .setHeight(120)
-    SpreadsheetApp.getUi().showModalDialog(
-      html,
-      'Choisir un modèle de courriel'
-    )
+/** What the confirmation dialog shows before anything is sent. */
+export interface SendSummary {
+  templates: string[]
+  aEnvoyer: number
+  sansEmail: number
+  sansEngagement: number
+  homonymes: number
+  nomIncomplet: number
+  quota: number
+}
+
+export function sendSummary (): SendSummary {
+  const templates = new EmailTemplateList(SpreadsheetApp.getActive()).list.map(
+    sheet => sheet.getName()
+  )
+  const { data, libelles } = collectData()
+  const p = partitionRecipients(data, libelles)
+  return {
+    templates,
+    aEnvoyer: p.aEnvoyer.length,
+    sansEmail: p.sansEmail.length,
+    sansEngagement: p.sansEngagement.length,
+    homonymes: p.homonymes.length,
+    nomIncomplet: p.nomIncomplet.length,
+    quota: MailApp.getRemainingDailyQuota()
   }
+}
+
+/** Menu entry: shows the confirmation dialog, which then calls sendEmails(). */
+export function selectEmailTemplate () {
+  const summary = sendSummary()
+  if (summary.templates.length === 0) {
+    SpreadsheetApp.getUi().alert('Aucun modèle de message défini!')
+    return
+  }
+  const htmlTemplate = HtmlService.createTemplateFromFile(
+    'dist/SelectEmailTemplate'
+  )
+  htmlTemplate.summary = summary
+  const html = htmlTemplate
+    .evaluate()
+    .setWidth(440)
+    .setHeight(340)
+  SpreadsheetApp.getUi().showModalDialog(html, 'Envoyer les emails')
 }
 
 /** Every combination of the template conditions, for test mails and previews. */
@@ -118,6 +142,8 @@ export interface SendError {
 
 export interface SendReport {
   envoyes: number
+  /** Mails left for another day because the daily quota ran out. */
+  reportes: number
   sansEngagement: string[]
   sansEmail: string[]
   nomIncomplet: string[]
@@ -209,9 +235,12 @@ function sendEmails2 (
     tousLesLibelles
   )
 
-  // check if mail quota is sufficient
-  if (MailApp.getRemainingDailyQuota() < aEnvoyer.length) {
-    ui.alert("Envoi impossible, quota d'envoi journalier dépassé!")
+  // Send what the daily quota allows, in sheet order; the rest keeps its
+  // status and is counted in the report.
+  const quota = MailApp.getRemainingDailyQuota()
+  const envois = aEnvoyer.slice(0, Math.max(0, quota))
+  if (envois.length === 0 && aEnvoyer.length > 0) {
+    ui.alert("Envoi impossible, quota d'envoi journalier épuisé!")
     return
   }
 
@@ -222,12 +251,17 @@ function sendEmails2 (
     ui.alert('Un envoi est déjà en cours, veuillez patienter.')
     return
   }
-  const report: SendReport = { envoyes: 0, erreurs: [], ...nonEnvoyes }
+  const report: SendReport = {
+    envoyes: 0,
+    reportes: aEnvoyer.length - envois.length,
+    erreurs: [],
+    ...nonEnvoyes
+  }
   try {
     const spreadsheet = SpreadsheetApp.getActive()
-    spreadsheet.toast(`Envoi de ${aEnvoyer.length} courriel(s)…`, 'Envoi en cours')
+    spreadsheet.toast(`Envoi de ${envois.length} courriel(s)…`, 'Envoi en cours')
     const personnesSheet = spreadsheet.getSheetByName('personnes')
-    for (const d of aEnvoyer) {
+    for (const d of envois) {
       const { subject, html } = template.constructHtml(d)
       const htmlBody = template.insertData(html, d)
       try {

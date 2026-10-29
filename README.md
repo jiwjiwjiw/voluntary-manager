@@ -23,9 +23,12 @@ Dans le classeur, un menu **Actions** propose :
   incohérentes, plages sur-remplies, engagements ou contreparties vers une
   personne ou une plage inexistante, engagements en double, personnes sans
   engagement.
-- **Envoyer les emails** : envoie le courriel de confirmation à chaque personne
-  dont le statut est `à envoyer`, puis passe le statut à `envoyé`. S'il y a
-  plusieurs feuilles modèle, une boîte de dialogue demande laquelle utiliser.
+- **Envoyer les emails** : ouvre un dialogue qui annonce le nombre de
+  courriels à envoyer (statut `à envoyer`), les personnes qui ne recevront
+  rien et le quota journalier restant, puis demande le modèle à utiliser.
+  Après confirmation, chaque courriel envoyé passe le statut à `envoyé`. Si le
+  quota est inférieur au nombre de courriels, les premiers (ordre de la
+  feuille) partent et les autres gardent leur statut pour le lendemain.
   Un seul envoi à la fois ; une adresse refusée n'interrompt pas les autres.
   Le rapport d'envoi liste les échecs, les personnes sans adresse, les
   homonymes (même prénom et nom, impossibles à distinguer), les noms

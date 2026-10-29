@@ -4,24 +4,54 @@
     <base target="_top">
     <style>
       body { font-family: Arial, sans-serif; font-size: 13px; margin: 12px; }
-      select { width: 100%; margin-bottom: 10px; }
+      select { width: 100%; margin: 4px 0 12px; }
+      ul { margin: 4px 0 12px; padding-left: 20px; color: #555; }
+      .big { font-size: 15px; }
+      .warning { color: #8a6d00; }
+      .error { color: #b00020; margin-top: 8px; }
       button { margin-right: 6px; }
-      #error { color: #b00020; margin-top: 8px; }
     </style>
   </head>
   <body>
-    <p>Modèle de courriel à utiliser :</p>
+    <p class="big"><b><?= summary.aEnvoyer ?></b> courriel<?= summary.aEnvoyer > 1 ? 's' : '' ?> à envoyer.</p>
+
+    <? const ignores = [
+         [summary.sansEmail, 'sans adresse email'],
+         [summary.homonymes, 'homonymes'],
+         [summary.nomIncomplet, 'au nom incomplet'],
+         [summary.sansEngagement, 'sans engagement']
+       ].filter(function (x) { return x[0] > 0; }); ?>
+    <? if (ignores.length) { ?>
+      <p>Ne recevront rien (voir <i>Vérifier le classeur</i>) :</p>
+      <ul>
+        <? for (const x of ignores) { ?>
+          <li><?= x[0] ?> personne<?= x[0] > 1 ? 's' : '' ?> <?= x[1] ?></li>
+        <? } ?>
+      </ul>
+    <? } ?>
+
+    <p>Quota d'envoi restant aujourd'hui : <?= summary.quota ?>.
+      <? if (summary.aEnvoyer > summary.quota) { ?>
+        <br><span class="warning">Seuls les <?= summary.quota ?> premiers (dans l'ordre de la feuille) partiront ; les autres garderont le statut « à envoyer ».</span>
+      <? } ?>
+    </p>
+
+    <label for="template-select">Modèle de courriel :</label>
     <select id="template-select">
-      <option value="">- Choisir un modèle -</option>
-      <? for (const index in templateNames) { ?>
-        <option value="<?= templateNames[index] ?>"><?= templateNames[index] ?></option>
+      <? if (summary.templates.length > 1) { ?>
+        <option value="">- Choisir un modèle -</option>
+      <? } ?>
+      <? for (const name of summary.templates) { ?>
+        <option value="<?= name ?>"><?= name ?></option>
       <? } ?>
     </select>
+
     <div>
-      <button id="send" onclick="doSendEmails();">Envoyer</button>
+      <button id="send" onclick="doSendEmails();" <?= summary.aEnvoyer === 0 || summary.quota === 0 ? 'disabled' : '' ?>>Envoyer</button>
       <button onclick="google.script.host.close();">Annuler</button>
     </div>
-    <div id="error"></div>
+    <div id="error" class="error"></div>
+
     <script>
       // A button rather than onchange on the select: keyboard navigation in
       // a select fires change, which used to start the whole send.
