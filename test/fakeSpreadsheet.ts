@@ -291,10 +291,16 @@ export class FakeSheet {
 }
 
 export class FakeSpreadsheet {
+  toasts: Array<{ message: string; title?: string }> = []
+
   constructor (private sheets: FakeSheet[]) {}
 
   getSheets () {
     return this.sheets
+  }
+
+  toast (message: string, title?: string) {
+    this.toasts.push({ message, title })
   }
 
   getSheetByName (name: string): FakeSheet | null {
@@ -357,16 +363,49 @@ export function installSpreadsheetApp (sheets: FakeSheet[]) {
   return { spreadsheet, ui }
 }
 
-/** Stubs MailApp: records sent mails, reports the given remaining quota. */
-export function installMailApp (remainingQuota = 100) {
+/**
+ * Stubs MailApp: records sent mails, reports the given remaining quota, and
+ * throws like Apps Script for an address that `rejects` matches.
+ */
+export function installMailApp (remainingQuota = 100, rejects?: RegExp) {
   const sent: any[] = []
   vi.stubGlobal('MailApp', {
     getRemainingDailyQuota: () => remainingQuota,
     sendEmail: (message: any) => {
+      if (rejects && rejects.test(message.to)) {
+        throw new Error(`Invalid email: ${message.to}`)
+      }
       sent.push(message)
     }
   })
   return { sent }
+}
+
+/** Stubs LockService with a document lock that is free or already taken. */
+export function installLockService (alreadyLocked = false) {
+  const state = { locked: alreadyLocked, released: 0 }
+  vi.stubGlobal('LockService', {
+    getDocumentLock: () => ({
+      tryLock: () => {
+        if (state.locked) return false
+        state.locked = true
+        return true
+      },
+      releaseLock: () => {
+        state.locked = false
+        state.released++
+      }
+    })
+  })
+  return state
+}
+
+/** Stubs Session with the given active and effective user addresses. */
+export function installSession (activeEmail: string, effectiveEmail = activeEmail) {
+  vi.stubGlobal('Session', {
+    getActiveUser: () => ({ getEmail: () => activeEmail }),
+    getEffectiveUser: () => ({ getEmail: () => effectiveEmail })
+  })
 }
 
 /**

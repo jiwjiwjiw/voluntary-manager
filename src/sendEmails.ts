@@ -10,6 +10,11 @@ import {
   rowHasValue
 } from './sheets-tools/helpers'
 
+/** Column of the send status in `personnes` (E). */
+const STATUS_COLUMN = 5
+export const STATUS_A_ENVOYER = 'à envoyer'
+export const STATUS_ENVOYE = 'envoyé'
+
 export function selectEmailTemplate () {
   const templateList = new EmailTemplateList(SpreadsheetApp.getActive()).list
   if (templateList.length == 0) {
@@ -23,8 +28,8 @@ export function selectEmailTemplate () {
     htmlTemplate.templateNames = templateList.map(x => x.getName())
     const html = htmlTemplate
       .evaluate()
-      .setWidth(250)
-      .setHeight(40)
+      .setWidth(320)
+      .setHeight(120)
     SpreadsheetApp.getUi().showModalDialog(
       html,
       'Choisir un modèle de courriel'
@@ -32,111 +37,62 @@ export function selectEmailTemplate () {
   }
 }
 
-export function testEmail () {
-  const template = new EmailTemplate(new ConfirmationEmailTemplateParams())
-  const ownEmail = Session.getActiveUser().getEmail()
-  const data: ConfirmationEmailData[] = [
-    {
-      personData: {
-        nom: 'TEST',
-        prenom: 'ArtisteSansContrepartie',
-        email: ownEmail
-      },
-      listeEngagements: [
-        '01.01.2021 | test | 20:00-21:00',
-        '02.01.2021 | test | 20:00-21:00',
-        '03.01.2021 | test | 20:00-21:00'
-      ],
-      listeContreparties: [],
-      estArtiste: true,
-      estBenevole: false
-    },
-    {
-      personData: {
-        nom: 'TEST',
-        prenom: 'BenevoleSansContrepartie',
-        email: ownEmail
-      },
-      listeEngagements: [
-        '01.01.2021 | test | 20:00-21:00',
-        '02.01.2021 | test | 20:00-21:00',
-        '03.01.2021 | test | 20:00-21:00'
-      ],
-      listeContreparties: [],
-      estArtiste: false,
-      estBenevole: true
-    },
-    {
-      personData: {
-        nom: 'TEST',
-        prenom: 'ArtisteEtBenevoleSansContrepartie',
-        email: ownEmail
-      },
-      listeEngagements: [
-        '01.01.2021 | test | 20:00-21:00',
-        '02.01.2021 | test | 20:00-21:00',
-        '03.01.2021 | test | 20:00-21:00'
-      ],
-      listeContreparties: [],
-      estArtiste: true,
-      estBenevole: true
-    },
-    {
-      personData: {
-        nom: 'TEST',
-        prenom: 'ArtisteAvecContrepartie',
-        email: ownEmail
-      },
-      listeEngagements: [
-        '01.01.2021 | test | 20:00-21:00',
-        '02.01.2021 | test | 20:00-21:00',
-        '03.01.2021 | test | 20:00-21:00'
-      ],
-      listeContreparties: [
-        'contrepartie 1 (valable uniquement le premier weekend)',
-        'contrepartie 2 (valable uniquement le premier weekend)'
-      ],
-      estArtiste: true,
-      estBenevole: false
-    },
-    {
-      personData: {
-        nom: 'TEST',
-        prenom: 'BenevoleAvecContrepartie',
-        email: ownEmail
-      },
-      listeEngagements: [
-        '01.01.2021 | test | 20:00-21:00',
-        '02.01.2021 | test | 20:00-21:00',
-        '03.01.2021 | test | 20:00-21:00'
-      ],
-      listeContreparties: [
-        "contrepartie 1 (valable pour n'importe quelle représentation)",
-        "contrepartie 2 (valable pour n'importe quelle représentation)"
-      ],
-      estArtiste: false,
-      estBenevole: true
-    },
-    {
-      personData: {
-        nom: 'TEST',
-        prenom: 'ArtisteEtBenevoleAvecContrepartie',
-        email: ownEmail
-      },
-      listeEngagements: [
-        '01.01.2021 | test | 20:00-21:00',
-        '02.01.2021 | test | 20:00-21:00',
-        '03.01.2021 | test | 20:00-21:00'
-      ],
-      listeContreparties: [
-        "contrepartie 1 (valable pour n'importe quelle représentation)",
-        'contrepartie 2 (valable uniquement le premier weekend)'
-      ],
-      estArtiste: true,
-      estBenevole: true
-    }
+/** Every combination of the template conditions, for test mails and previews. */
+export function testEmailData (email: string): ConfirmationEmailData[] {
+  const engagements = [
+    '01.01.2021 | test | 20:00-21:00',
+    '02.01.2021 | test | 20:00-21:00',
+    '03.01.2021 | test | 20:00-21:00'
   ]
-  sendEmails2(template, data)
+  const cas = (
+    prenom: string,
+    estArtiste: boolean,
+    estBenevole: boolean,
+    listeContreparties: string[]
+  ): ConfirmationEmailData => ({
+    personData: { nom: 'TEST', prenom, email },
+    libelle: `${prenom} TEST`,
+    listeEngagements: engagements,
+    listeContreparties,
+    estArtiste,
+    estBenevole
+  })
+  return [
+    cas('ArtisteSansContrepartie', true, false, []),
+    cas('BenevoleSansContrepartie', false, true, []),
+    cas('ArtisteEtBenevoleSansContrepartie', true, true, []),
+    cas('ArtisteAvecContrepartie', true, false, [
+      'contrepartie 1 (valable uniquement le premier weekend)',
+      'contrepartie 2 (valable uniquement le premier weekend)'
+    ]),
+    cas('BenevoleAvecContrepartie', false, true, [
+      "contrepartie 1 (valable pour n'importe quelle représentation)",
+      "contrepartie 2 (valable pour n'importe quelle représentation)"
+    ]),
+    cas('ArtisteEtBenevoleAvecContrepartie', true, true, [
+      "contrepartie 1 (valable pour n'importe quelle représentation)",
+      'contrepartie 2 (valable uniquement le premier weekend)'
+    ])
+  ]
+}
+
+/** The address of the current user, or '' when Apps Script does not expose it. */
+export function currentUserEmail (): string {
+  return (
+    Session.getActiveUser().getEmail() || Session.getEffectiveUser().getEmail()
+  )
+}
+
+export function testEmail () {
+  const ownEmail = currentUserEmail()
+  if (!ownEmail) {
+    SpreadsheetApp.getUi().alert(
+      "Impossible de déterminer votre adresse email, l'envoi de test est annulé."
+    )
+    return
+  }
+  const template = new EmailTemplate(new ConfirmationEmailTemplateParams())
+  sendEmails2(template, testEmailData(ownEmail))
 }
 
 /**
@@ -149,79 +105,168 @@ export function sendEmails (sheetName: string) {
   const template = new EmailTemplate(
     new ConfirmationEmailTemplateParams(sheetName)
   )
-  const data = collectData()
-  sendEmails2(template, data)
+  const { data, libelles } = collectData()
+  sendEmails2(template, data, libelles)
 }
+
+/** A mail that could not be sent, as shown in the report. */
+export interface SendError {
+  personne: string
+  email: string
+  message: string
+}
+
+export interface SendReport {
+  envoyes: number
+  sansEngagement: string[]
+  sansEmail: string[]
+  nomIncomplet: string[]
+  homonymes: string[]
+  erreurs: SendError[]
+}
+
+const displayName = (d: ConfirmationEmailData) =>
+  [d.personData.prenom, d.personData.nom].filter(Boolean).join(' ')
 
 /**
  * Splits the recipients into those who get a mail and those who are only
- * listed in the report: people without any engagement have nothing to
- * confirm, people without an email address cannot be reached.
+ * listed in the report:
+ * - no engagement: nothing to confirm;
+ * - no email address: cannot be reached;
+ * - empty label (nom or prénom missing): their engagements cannot be found;
+ * - homonyms (label shared with another person): their engagements and
+ *   contreparties cannot be told apart, and the status of the other person
+ *   would be overwritten.
+ *
+ * @param tousLesLibelles labels of every person of the sheet, not only the
+ *   recipients, so that a homonym with another status is detected too
  */
-export function partitionRecipients (data: ReadonlyArray<ConfirmationEmailData>) {
+export function partitionRecipients (
+  data: ReadonlyArray<ConfirmationEmailData>,
+  tousLesLibelles: ReadonlyArray<string> = data.map(d => d.libelle)
+) {
+  const occurrences = new Map<string, number>()
+  for (const libelle of tousLesLibelles) {
+    occurrences.set(libelle, (occurrences.get(libelle) ?? 0) + 1)
+  }
   const aEnvoyer: ConfirmationEmailData[] = []
   const sansEngagement: string[] = []
   const sansEmail: string[] = []
+  const nomIncomplet: string[] = []
+  const homonymes: string[] = []
   for (const d of data) {
-    const nomComplet = `${d.personData.nom} ${d.personData.prenom}`
-    if (d.listeEngagements.length === 0) {
-      sansEngagement.push(nomComplet)
+    if (d.libelle === '') {
+      nomIncomplet.push(displayName(d) || `ligne ${d.row ?? '?'}`)
+    } else if ((occurrences.get(d.libelle) ?? 0) > 1) {
+      homonymes.push(displayName(d))
+    } else if (d.listeEngagements.length === 0) {
+      sansEngagement.push(displayName(d))
     } else if (!d.personData.email) {
-      sansEmail.push(nomComplet)
+      sansEmail.push(displayName(d))
     } else {
       aEnvoyer.push(d)
     }
   }
-  return { aEnvoyer, sansEngagement, sansEmail }
+  return { aEnvoyer, sansEngagement, sansEmail, nomIncomplet, homonymes }
 }
 
-function sendEmails2 (template: EmailTemplate, data: ConfirmationEmailData[]) {
+/** A readable text version of the HTML body, for clients that show no HTML. */
+export function htmlToPlainText (html: string): string {
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|h[1-6]|li|ul|ol|div)>/gi, '\n')
+    .replace(/<li[^>]*>/gi, '- ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+function sendEmails2 (
+  template: EmailTemplate,
+  data: ConfirmationEmailData[],
+  tousLesLibelles?: string[]
+) {
+  const ui = SpreadsheetApp.getUi()
   // check if there are mails to send
   if (data.length === 0) {
-    SpreadsheetApp.getUi().alert('Aucun mail à envoyer!')
+    ui.alert('Aucun mail à envoyer!')
     return
   }
 
   // an unreadable template would send empty mails
   if (template.isEmpty()) {
-    SpreadsheetApp.getUi().alert(
-      'Envoi impossible, le modèle de courriel est vide ou introuvable!'
-    )
+    ui.alert('Envoi impossible, le modèle de courriel est vide ou introuvable!')
     return
   }
 
-  const { aEnvoyer, sansEngagement, sansEmail } = partitionRecipients(data)
+  const { aEnvoyer, ...nonEnvoyes } = partitionRecipients(
+    data,
+    tousLesLibelles
+  )
 
   // check if mail quota is sufficient
   if (MailApp.getRemainingDailyQuota() < aEnvoyer.length) {
-    SpreadsheetApp.getUi().alert(
-      "Envoi impossible, quota d'envoi journalier dépassé!"
-    )
+    ui.alert("Envoi impossible, quota d'envoi journalier dépassé!")
     return
   }
 
-  for (const d of aEnvoyer) {
-    const { subject, html } = template.constructHtml(d)
-    MailApp.sendEmail({
-      to: d.personData.email,
-      subject: subject,
-      htmlBody: template.insertData(html, d)
-    })
-    UpdateSendStatus(d.personData.nom, d.personData.prenom, 'envoyé')
+  // A second click on the menu while a run is in progress would send the
+  // same mails again: one run at a time.
+  const lock = LockService.getDocumentLock()
+  if (!lock.tryLock(0)) {
+    ui.alert('Un envoi est déjà en cours, veuillez patienter.')
+    return
+  }
+  const report: SendReport = { envoyes: 0, erreurs: [], ...nonEnvoyes }
+  try {
+    const spreadsheet = SpreadsheetApp.getActive()
+    spreadsheet.toast(`Envoi de ${aEnvoyer.length} courriel(s)…`, 'Envoi en cours')
+    const personnesSheet = spreadsheet.getSheetByName('personnes')
+    for (const d of aEnvoyer) {
+      const { subject, html } = template.constructHtml(d)
+      const htmlBody = template.insertData(html, d)
+      try {
+        MailApp.sendEmail({
+          to: d.personData.email.trim(),
+          subject: template.insertSubjectData(subject, d),
+          body: htmlToPlainText(htmlBody),
+          htmlBody
+        })
+      } catch (e) {
+        // One bad address must not stop the others.
+        report.erreurs.push({
+          personne: displayName(d),
+          email: d.personData.email,
+          message: e instanceof Error ? e.message : String(e)
+        })
+        continue
+      }
+      report.envoyes++
+      if (d.row !== undefined) {
+        personnesSheet?.getRange(d.row, STATUS_COLUMN).setValue(STATUS_ENVOYE)
+      }
+    }
+  } finally {
+    lock.releaseLock()
   }
 
   // confirm mails are sent
   const htmlOutput = HtmlService.createTemplateFromFile(
     'dist/emailReportTemplate'
   )
-  htmlOutput.report = {
-    envoyes: aEnvoyer.length,
-    nonEnvoyes: sansEngagement,
-    sansEmail: sansEmail
-  }
-  const emailReport = htmlOutput.evaluate()
-  SpreadsheetApp.getUi().showModalDialog(emailReport, "Rapport d'envoi")
+  htmlOutput.report = report
+  const emailReport = htmlOutput.evaluate().setWidth(500).setHeight(400)
+  ui.showModalDialog(emailReport, "Rapport d'envoi")
 }
+
+/** Case- and space-insensitive comparison of sheet values. */
+const sameText = (a: unknown, b: string) =>
+  String(a).trim().toLowerCase() === b.trim().toLowerCase()
 
 /**
  * Assembles the email data of every recipient from the raw sheet rows.
@@ -232,7 +277,8 @@ function sendEmails2 (template: EmailTemplate, data: ConfirmationEmailData[]) {
  * part of another one (bar / barman) or that appears in a date or a name
  * cannot cause a false match.
  *
- * @param destinataires rows of `personnes!A:E` to send to: [nom, prénom, « prénom nom », email, statut]
+ * @param destinataires rows of `personnes!A:E` to send to: [nom, prénom, « prénom nom », email, statut];
+ *   a sixth element, when present, is the sheet row number
  * @param engagements rows of `engagements!A:B`: [personne, libellé de plage]
  * @param contreparties rows of `contreparties!A:C`: [personne, contrepartie, remarque]
  * @param fonctions rows of `fonctions!A:B`: [nom, type] with type `artiste` or `bénévole`
@@ -246,10 +292,10 @@ export function buildEmailData (
   plages: ReadonlyArray<any[]>
 ): ConfirmationEmailData[] {
   const fonctionsArtiste = fonctions
-    .filter(rowHasValue(1, 'artiste'))
+    .filter(row => sameText(row[1], 'artiste'))
     .map(getColumnAsRow(0))
   const fonctionsBenevole = fonctions
-    .filter(rowHasValue(1, 'bénévole'))
+    .filter(row => sameText(row[1], 'bénévole'))
     .map(getColumnAsRow(0))
   const fonctionDePlage = new Map<string, string>(
     plages.map(row => [row[5], row[1]])
@@ -262,20 +308,28 @@ export function buildEmailData (
 
   const data: ConfirmationEmailData[] = []
   for (const d of destinataires) {
-    const listeEngagements = engagements
-      .filter(rowHasValue(0, d[2]))
-      .map(getColumnAsRow(1))
-    const listeContreparties = contreparties
-      .filter(rowHasValue(0, d[2]))
-      .map(row => (row[2] !== '' ? `${row[1]} (${row[2]})` : row[1]))
+    const libelle = String(d[2] ?? '')
+    // An empty label would match every engagement row without a person.
+    const listeEngagements =
+      libelle === ''
+        ? []
+        : engagements.filter(rowHasValue(0, libelle)).map(getColumnAsRow(1))
+    const listeContreparties =
+      libelle === ''
+        ? []
+        : contreparties
+            .filter(rowHasValue(0, libelle))
+            .map(row => (row[2] !== '' ? `${row[1]} (${row[2]})` : row[1]))
     data.push({
       personData: {
-        nom: d[0],
-        prenom: d[1],
-        email: d[3]
+        nom: String(d[0] ?? ''),
+        prenom: String(d[1] ?? ''),
+        email: String(d[3] ?? '')
       },
-      listeEngagements: listeEngagements,
-      listeContreparties: listeContreparties,
+      libelle,
+      row: typeof d[5] === 'number' ? d[5] : undefined,
+      listeEngagements,
+      listeContreparties,
       estArtiste: aUneFonctionParmi(listeEngagements, fonctionsArtiste),
       estBenevole: aUneFonctionParmi(listeEngagements, fonctionsBenevole)
     })
@@ -283,51 +337,53 @@ export function buildEmailData (
   return data
 }
 
-function collectData (): ConfirmationEmailData[] {
+function collectData (): {
+  data: ConfirmationEmailData[]
+  libelles: string[]
+} {
   // get data from spreadsheet
   const classeur = SpreadsheetApp.getActive()
   const personnesSheet = classeur.getSheetByName('personnes')
-  const personnesRange = personnesSheet?.getRange('A2:F')
-  const personnesData = personnesRange?.getValues()
-  const destinataires = personnesData?.filter(rowHasValue(4, 'à envoyer'))
-  const engagementsSheet = classeur.getSheetByName('engagements')
-  const engagementsRange = engagementsSheet?.getRange('A2:B')
-  const engagementsData = engagementsRange?.getValues()
-  const engagements = engagementsData?.filter(rowHasContent)
-  const contrepartiesSheet = classeur.getSheetByName('contreparties')
-  const contrepartiesRange = contrepartiesSheet?.getRange('A2:C')
-  const contrepartiesData = contrepartiesRange?.getValues()
-  const contreparties = contrepartiesData?.filter(rowHasContent)
-  const fonctionsSheet = classeur.getSheetByName('fonctions')
-  const fonctionsRange = fonctionsSheet?.getRange('A2:B')
-  const fonctionsData = fonctionsRange?.getValues()
-  const fonctions = fonctionsData?.filter(rowHasContent) ?? []
-  const plagesSheet = classeur.getSheetByName('plages')
-  const plagesRange = plagesSheet?.getRange('A2:F')
-  const plages = plagesRange?.getDisplayValues().filter(rowHasContent) ?? []
+  const personnesData = personnesSheet?.getRange('A2:E').getValues() ?? []
+  const libelles = personnesData
+    .filter(rowHasContent)
+    .map(row => String(row[2] ?? ''))
+  const destinataires = personnesData
+    .map((row, index) => [...row, index + 2]) // keep the sheet row
+    .filter(row => sameText(row[4], STATUS_A_ENVOYER))
+  const engagements =
+    classeur
+      .getSheetByName('engagements')
+      ?.getRange('A2:B')
+      .getValues()
+      .filter(rowHasContent) ?? []
+  const contreparties =
+    classeur
+      .getSheetByName('contreparties')
+      ?.getRange('A2:C')
+      .getValues()
+      .filter(rowHasContent) ?? []
+  const fonctions =
+    classeur
+      .getSheetByName('fonctions')
+      ?.getRange('A2:B')
+      .getValues()
+      .filter(rowHasContent) ?? []
+  const plages =
+    classeur
+      .getSheetByName('plages')
+      ?.getRange('A2:F')
+      .getDisplayValues()
+      .filter(rowHasContent) ?? []
 
-  if (destinataires && engagements && contreparties) {
-    return buildEmailData(
+  return {
+    data: buildEmailData(
       destinataires,
       engagements,
       contreparties,
       fonctions,
       plages
-    )
-  }
-  return []
-}
-
-function UpdateSendStatus (nom: string, prenom: string, status: string) {
-  // get data from spreadsheet
-  const personnesSheet = SpreadsheetApp.getActive().getSheetByName('personnes')
-  const personnesRange = personnesSheet?.getRange('A2:F')
-  const index = personnesRange
-    ?.getValues()
-    .findIndex(x => x[0] === nom && x[1] === prenom)
-  if (index !== undefined && index !== -1) {
-    personnesSheet
-      ?.getRange(index + 2, 5, 1, 1) // increment index by 2, to take into account the different indexing (0-based for findIndex, 1-based for getRange) and the headings not included in personneRange
-      .setValue(status)
+    ),
+    libelles
   }
 }

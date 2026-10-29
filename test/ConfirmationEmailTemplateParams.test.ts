@@ -9,6 +9,7 @@ const params = new ConfirmationEmailTemplateParams()
 function data (overrides: Partial<ConfirmationEmailData> = {}): ConfirmationEmailData {
   return {
     personData: { nom: 'Dupont', prenom: 'Marie', email: 'marie@example.org' },
+    libelle: 'Marie Dupont',
     listeEngagements: ['01.01.2021 | bar | 20:00-21:00'],
     listeContreparties: [],
     estArtiste: false,

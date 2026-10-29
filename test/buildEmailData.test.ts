@@ -49,6 +49,8 @@ describe('buildEmailData', () => {
           prenom: 'Marie',
           email: 'marie@example.org'
         },
+        libelle: 'Marie Dupont',
+        row: undefined,
         listeEngagements: [
           '01.01.2021 | bar | 20:00-21:00',
           '02.01.2021 | musicien | 20:00-22:00'
@@ -67,6 +69,30 @@ describe('buildEmailData', () => {
     expect(data.listeContreparties).toEqual([])
     expect(data.estArtiste).toBe(false)
     expect(data.estBenevole).toBe(false)
+  })
+
+  it('keeps the sheet row given as sixth element', () => {
+    const destinataires = [['Martin', 'Jean', 'Jean Martin', 'j@example.org', 'à envoyer', 7]]
+    const [data] = buildEmailData(destinataires, [], [], fonctions, plages)
+    expect(data.row).toBe(7)
+  })
+
+  it('gives no engagement to a person without label instead of the orphan rows', () => {
+    const destinataires = [['Martin', '', '', 'j@example.org', 'à envoyer']]
+    const engagements = [['', '01.01.2021 | bar | 20:00-21:00']]
+    const contreparties = [['', 'boisson', '']]
+    const [data] = buildEmailData(destinataires, engagements, contreparties, fonctions, plages)
+    expect(data.libelle).toBe('')
+    expect(data.listeEngagements).toEqual([])
+    expect(data.listeContreparties).toEqual([])
+  })
+
+  it('reads the function type regardless of case and spaces', () => {
+    const fonctions = [['bar', ' Bénévole ']]
+    const destinataires = [['Bar', 'Ana', 'Ana Bar', 'ana@example.org', 'à envoyer']]
+    const engagements = [['Ana Bar', '01.01.2021 | bar | 20:00-21:00']]
+    const [data] = buildEmailData(destinataires, engagements, [], fonctions, plages)
+    expect(data.estBenevole).toBe(true)
   })
 
   it('derives the roles from the function of each plage, not from substrings', () => {
