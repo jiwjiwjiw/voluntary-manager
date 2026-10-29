@@ -147,8 +147,13 @@ export class FakeRange {
       const line: (FakeRichText | null)[] = []
       for (let c = 0; c < this.numColumns; c++) {
         const v = this.cell(r, c)
+        // Like Apps Script: null for a cell whose value is not text.
         line.push(
-          v instanceof FakeRichText ? v : new FakeRichText(cellToString(v))
+          v instanceof FakeRichText
+            ? v
+            : typeof v === 'string'
+              ? new FakeRichText(v)
+              : null
         )
       }
       out.push(line)
@@ -321,14 +326,20 @@ export function installSpreadsheetApp (sheets: FakeSheet[]) {
     createMenu: vi.fn()
   }
   const newDataValidation = () => {
-    const rule: any = { allowInvalid: true, values: [] as string[] }
+    const rule: any = { allowInvalid: true }
     const builder = {
       setAllowInvalid (b: boolean) {
         rule.allowInvalid = b
         return builder
       },
-      requireValueInList (values: string[]) {
+      requireValueInList (values: string[], showDropdown = true) {
         rule.values = values
+        rule.showDropdown = showDropdown
+        return builder
+      },
+      requireValueInRange (range: FakeRange, showDropdown = true) {
+        rule.range = `${range.getSheet().getName()}!${range.getRow()}:${range.getLastRow()}/${range.getColumn()}:${range.getLastColumn()}`
+        rule.showDropdown = showDropdown
         return builder
       },
       build () {

@@ -38,6 +38,30 @@ describe('insertData', () => {
   it('renders an empty list as an empty <ul>', () => {
     expect(params.insertData('%LISTE_CONTREPARTIES%', data())).toBe('<ul></ul>')
   })
+
+  it('escapes the inserted values', () => {
+    const d = data({
+      personData: { nom: 'O<Neil', prenom: 'A&B', email: 'a@b.c' },
+      listeContreparties: ['boisson (<2)']
+    })
+    expect(params.insertData('%PRENOM% %NOM% %LISTE_CONTREPARTIES%', d)).toBe(
+      'A&amp;B O&lt;Neil <ul><li>boisson (&lt;2)</li></ul>'
+    )
+  })
+
+  it('inserts $ sequences of a value literally', () => {
+    const d = data({ personData: { nom: 'a$&b', prenom: "c$'d", email: '' } })
+    expect(params.insertData('[%NOM%][%PRENOM%]', d)).toBe("[a$&amp;b][c$&#39;d]")
+  })
+})
+
+describe('insertSubjectData', () => {
+  it('replaces the person markers without escaping', () => {
+    const d = data({ personData: { nom: 'A&B', prenom: 'Marie', email: 'm@x.y' } })
+    expect(params.insertSubjectData('%PRENOM% %NOM% <%EMAIL%> %NOM%', d)).toBe(
+      'Marie A&B <m@x.y> A&B'
+    )
+  })
 })
 
 describe('evaluateCondition', () => {

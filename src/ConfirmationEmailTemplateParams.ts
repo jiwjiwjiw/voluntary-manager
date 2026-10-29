@@ -1,4 +1,5 @@
 import { EmailTemplateParams } from './sheets-tools/EmailTemplate'
+import { escapeHtml } from './sheets-tools/helpers'
 
 /** Everything the confirmation email needs to know about one recipient. */
 export interface ConfirmationEmailData {
@@ -31,19 +32,38 @@ export class ConfirmationEmailTemplateParams implements EmailTemplateParams {
     'est bénévole et a au moins un code'
   ]
 
+  /**
+   * Substitutes the markers in the HTML body. Values are escaped, and the
+   * replacement is a function so that `$` sequences in a value are inserted
+   * literally (a string replacement would interpret `$&`, `$'`…).
+   */
   insertData (html: string, data: ConfirmationEmailData): string {
-    html = html.replaceAll('%PRENOM%', data.personData.prenom)
-    html = html.replaceAll('%NOM%', data.personData.nom)
-    html = html.replaceAll('%EMAIL%', data.personData.email)
-    html = html.replaceAll(
-      '%LISTE_ENGAGEMENTS%',
-      `<ul>${data.listeEngagements.map(x => `<li>${x}</li>`).join('')}</ul>`
-    )
-    html = html.replaceAll(
-      '%LISTE_CONTREPARTIES%',
-      `<ul>${data.listeContreparties.map(x => `<li>${x}</li>`).join('')}</ul>`
-    )
+    const list = (items: string[]) =>
+      `<ul>${items.map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul>`
+    const values: Record<string, string> = {
+      '%PRENOM%': escapeHtml(data.personData.prenom),
+      '%NOM%': escapeHtml(data.personData.nom),
+      '%EMAIL%': escapeHtml(data.personData.email),
+      '%LISTE_ENGAGEMENTS%': list(data.listeEngagements),
+      '%LISTE_CONTREPARTIES%': list(data.listeContreparties)
+    }
+    for (const marker of Object.keys(values)) {
+      html = html.replaceAll(marker, () => values[marker])
+    }
     return html
+  }
+
+  /** Substitutes the person markers in the plain-text subject. */
+  insertSubjectData (subject: string, data: ConfirmationEmailData): string {
+    const values: Record<string, string> = {
+      '%PRENOM%': data.personData.prenom,
+      '%NOM%': data.personData.nom,
+      '%EMAIL%': data.personData.email
+    }
+    for (const marker of Object.keys(values)) {
+      subject = subject.replaceAll(marker, () => values[marker])
+    }
+    return subject
   }
 
   evaluateCondition (condition: string, data: ConfirmationEmailData): boolean {

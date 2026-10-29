@@ -89,17 +89,65 @@ describe('EmailTemplate', () => {
     expect(template.constructHtml(benevole).html).toBe(
       '<p>' +
         "<span style='font-weight:bold'>gras </span>" +
-        "<a href='https://example.org'><span style='color:#ff0000;font-style:italic'>lien</span></a>" +
+        '<a href="https://example.org"><span style=\'color:#ff0000;font-style:italic\'>lien</span></a>' +
         "<span style='text-decoration:underline line-through'> barré</span>" +
         '</p>'
     )
   })
 
-  it('is empty, with an alert, when the template sheet is missing', () => {
-    installSpreadsheetApp([])
+  it('escapes HTML characters and keeps line breaks of cell text', () => {
+    const { template } = templateFrom([
+      ['titre', '', 'Tom & Jerry <3'],
+      ['paragraphe', '', 'ligne 1\nligne 2'],
+      ['élément de liste', '', 'a < b']
+    ])
+    expect(template.constructHtml(benevole).html).toBe(
+      '<h1>Tom &amp; Jerry &lt;3</h1>' +
+        "<p><span style=''>ligne 1<br>ligne 2</span></p>" +
+        "<ul><li><span style=''>a &lt; b</span></li></ul>"
+    )
+  })
+
+  it('renders cells that are not text (dates, numbers) as their text', () => {
+    const { template } = templateFrom([
+      ['sujet', '', 2026],
+      ['paragraphe', '', 2026],
+      ['élément de liste', '', true],
+      ['aucun', '', 42]
+    ])
+    expect(template.constructHtml(benevole)).toEqual({
+      subject: '2026',
+      html: '<p>2026</p><ul><li>true</li></ul>42'
+    })
+  })
+
+  it('applies the condition of a sujet row', () => {
+    const { template } = templateFrom([
+      ['sujet', 'est artiste', 'Pour artistes'],
+      ['sujet', 'est bénévole', 'Pour bénévoles']
+    ])
+    expect(template.constructHtml(benevole).subject).toBe('Pour bénévoles')
+  })
+
+  it('tolerates spaces around the type and condition', () => {
+    const { template } = templateFrom([['  paragraphe ', ' est bénévole ', 'ok']])
+    expect(template.constructHtml(benevole).html).toBe(
+      "<p><span style=''>ok</span></p>"
+    )
+  })
+
+  it('substitutes the markers of the subject through the params', () => {
+    const { template } = templateFrom([['sujet', '', 'Pour %PRENOM% %NOM%']])
+    const { subject } = template.constructHtml(benevole)
+    expect(template.insertSubjectData(subject, benevole)).toBe('Pour Marie Dupont')
+  })
+
+  it('is empty, without any UI call, when the template sheet is missing', () => {
+    const { ui } = installSpreadsheetApp([])
     const template = new EmailTemplate(new ConfirmationEmailTemplateParams())
     expect(template.isEmpty()).toBe(true)
     expect(template.constructHtml(benevole)).toEqual({ subject: '', html: '' })
+    expect(ui.alerts).toEqual([])
   })
 
   it('is empty when the sheet only has a header', () => {
