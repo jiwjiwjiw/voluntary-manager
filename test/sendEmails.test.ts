@@ -3,6 +3,7 @@ import {
   currentUserEmail,
   htmlToPlainText,
   partitionRecipients,
+  selectEmailTemplate,
   sendEmails,
   testEmail,
   testEmailData
@@ -94,6 +95,7 @@ describe('sendEmails', () => {
     ])
     expect(report(templates)).toEqual({
       envoyes: 2,
+      reportes: 0,
       erreurs: [],
       sansEmail: ['Paul Durand'],
       sansEngagement: ['Léa Petit'],
@@ -181,13 +183,24 @@ describe('sendEmails', () => {
     expect(ui.showModalDialog).not.toHaveBeenCalled()
   })
 
-  it('refuses to send when the daily quota is too low', () => {
-    const { sent, ui } = workbook([simpleTemplate()], { quota: 1 })
+  it('sends what the daily quota allows and reports the rest', () => {
+    const { sent, personnes, templates } = workbook([simpleTemplate()], { quota: 1 })
+
+    sendEmails('modèle courriel')
+
+    expect(sent.map(m => m.to)).toEqual(['marie@example.org'])
+    expect(personnes.cells[8][4]).toBe('À envoyer ')
+    expect(report(templates).envoyes).toBe(1)
+    expect(report(templates).reportes).toBe(1)
+  })
+
+  it('refuses to send when the daily quota is exhausted', () => {
+    const { sent, ui } = workbook([simpleTemplate()], { quota: 0 })
 
     sendEmails('modèle courriel')
 
     expect(sent).toHaveLength(0)
-    expect(ui.alerts).toEqual(["Envoi impossible, quota d'envoi journalier dépassé!"])
+    expect(ui.alerts).toEqual(["Envoi impossible, quota d'envoi journalier épuisé!"])
   })
 
   it("ignores the dialog's placeholder entry", () => {
@@ -197,6 +210,39 @@ describe('sendEmails', () => {
 
     expect(sent).toHaveLength(0)
     expect(ui.showModalDialog).not.toHaveBeenCalled()
+  })
+})
+
+describe('selectEmailTemplate', () => {
+  it('shows the counts, the quota and the templates in the dialog', () => {
+    const { templates, ui } = workbook([
+      simpleTemplate(),
+      new FakeSheet('modèle 2', [headers, ['sujet', '', 'S']])
+    ])
+
+    selectEmailTemplate()
+
+    expect(templates[0].file).toBe('dist/SelectEmailTemplate')
+    expect(templates[0].template.summary).toEqual({
+      templates: ['modèle courriel', 'modèle 2'],
+      aEnvoyer: 2,
+      sansEmail: 1,
+      sansEngagement: 1,
+      homonymes: 1,
+      nomIncomplet: 1,
+      quota: 100
+    })
+    expect(ui.showModalDialog).toHaveBeenCalledTimes(1)
+  })
+
+  it('alerts when the workbook holds no template sheet', () => {
+    const { ui, sent } = workbook()
+
+    selectEmailTemplate()
+
+    expect(ui.alerts).toEqual(['Aucun modèle de message défini!'])
+    expect(ui.showModalDialog).not.toHaveBeenCalled()
+    expect(sent).toHaveLength(0)
   })
 })
 

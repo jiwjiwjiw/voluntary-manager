@@ -12,6 +12,10 @@
   <body>
     <p><b><?= report.envoyes ?></b> courriel<?= report.envoyes > 1 ? 's' : '' ?> envoyé<?= report.envoyes > 1 ? 's' : '' ?>.</p>
 
+    <? if (report.reportes) { ?>
+      <p class="error"><b><?= report.reportes ?></b> courriel<?= report.reportes > 1 ? 's' : '' ?> non envoyé<?= report.reportes > 1 ? 's' : '' ?> : quota journalier épuisé. Relancez l'envoi demain, les statuts sont restés « à envoyer ».</p>
+    <? } ?>
+
     <? if (report.erreurs.length) { ?>
       <h2 class="error">Échecs d'envoi</h2>
       <ul>
