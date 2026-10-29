@@ -110,7 +110,7 @@ describe('updatePlanning', () => {
     const perPerson = spreadsheet.getSheetByName('planning personnes')!
     expect(perPerson.cells[0]).toEqual(['personne', 'nombre de plages', 'plages'])
     expect(perPerson.rows()).toEqual([
-      ['Jean Martin', 0, ''],
+      ['Jean Martin', 0],
       ['Marie Dupont', 2, '01.01.2021 | bar\n02.01.2021 | bar']
     ])
   })
