@@ -24,6 +24,25 @@ describe('Validation', () => {
     expect(rule.values).toBeUndefined()
   })
 
+  it('builds a list of display values when the range holds dates', () => {
+    // A rule referencing a range of dates rejects the date picked in the
+    // dropdown: Sheets compares the text with the raw date value.
+    const dates = new FakeSheet('dates', [
+      ['date'],
+      [new Date(2021, 0, 1)],
+      [''],
+      [new Date(2021, 0, 2)]
+    ])
+    const plages = new FakeSheet('plages', [['date']])
+    installSpreadsheetApp([dates, plages])
+
+    new Validation('plages', 'A2:A', 'dates', 'A2:A').update()
+
+    const { rule } = plages.validations[0]
+    expect(rule.values).toEqual(['01.01.2021', '02.01.2021'])
+    expect(rule.range).toBeUndefined()
+  })
+
   it('builds a list, without empty cells or duplicates, when extra values are added', () => {
     const dates = new FakeSheet('dates', [['date'], ['d1'], [''], ['d1'], ['d2']])
     const plages = new FakeSheet('plages', [['date']])
