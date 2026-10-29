@@ -9,7 +9,7 @@ export function composeFullName (row: ReadonlyArray<unknown>): string {
 
 export function updatePersonnes () {
   const personnesSheet = SpreadsheetApp.getActive().getSheetByName('personnes')
-  const personnesRange = personnesSheet?.getRange('A2:F')
+  const personnesRange = personnesSheet?.getRange('A2:B')
   const personnesData = personnesRange?.getValues()
   const output = personnesData?.map(x => [composeFullName(x)])
   if (output) {
