@@ -2,21 +2,44 @@
 <html>
   <head>
     <base target="_top">
+    <style>
+      body { font-family: Arial, sans-serif; font-size: 13px; margin: 12px; }
+      select { width: 100%; margin-bottom: 10px; }
+      button { margin-right: 6px; }
+      #error { color: #b00020; margin-top: 8px; }
+    </style>
   </head>
-  <script>
-    function doSendEmails() {
-      var name = document.getElementById('template-select').value;
-      if (!name) return;
-      google.script.run.sendEmails(name);
-      google.script.host.close();
-    }
-  </script>
   <body>
-    <select name="templates" id="template-select" onchange="doSendEmails();">
+    <p>Modèle de courriel à utiliser :</p>
+    <select id="template-select">
       <option value="">- Choisir un modèle -</option>
-      <? for (let index in templateNames) { ?>
-            <option value="<?= templateNames[index] ?>"><?= templateNames[index] ?></option>
-          <? } ?>
+      <? for (const index in templateNames) { ?>
+        <option value="<?= templateNames[index] ?>"><?= templateNames[index] ?></option>
+      <? } ?>
     </select>
+    <div>
+      <button id="send" onclick="doSendEmails();">Envoyer</button>
+      <button onclick="google.script.host.close();">Annuler</button>
+    </div>
+    <div id="error"></div>
+    <script>
+      // A button rather than onchange on the select: keyboard navigation in
+      // a select fires change, which used to start the whole send.
+      function doSendEmails() {
+        var name = document.getElementById('template-select').value;
+        if (!name) {
+          document.getElementById('error').textContent = 'Choisissez un modèle.';
+          return;
+        }
+        document.getElementById('send').disabled = true;
+        google.script.run
+          .withSuccessHandler(function () { google.script.host.close(); })
+          .withFailureHandler(function (error) {
+            document.getElementById('send').disabled = false;
+            document.getElementById('error').textContent = 'Erreur : ' + error.message;
+          })
+          .sendEmails(name);
+      }
+    </script>
   </body>
 </html>
