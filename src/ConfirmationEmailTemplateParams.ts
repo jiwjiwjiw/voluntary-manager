@@ -8,6 +8,10 @@ export interface ConfirmationEmailData {
     prenom: string
     email: string
   }
+  /** The « prénom nom » label (personnes!C) that engagements refer to. */
+  libelle: string
+  /** Row of the person in `personnes`, when the data comes from the sheet. */
+  row?: number
   /** Labels of the plages the person is engaged on. */
   listeEngagements: string[]
   /** Contreparties granted to the person, remark included in parentheses. */

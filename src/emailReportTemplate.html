@@ -2,24 +2,53 @@
 <html>
   <head>
     <base target="_top">
+    <style>
+      body { font-family: Arial, sans-serif; font-size: 13px; margin: 12px; }
+      h2 { font-size: 14px; margin: 14px 0 4px; }
+      ul { margin: 4px 0 0 0; }
+      .error { color: #b00020; }
+    </style>
   </head>
   <body>
-    <p> <?= report.envoyes ?> mail<?= (report.envoyes > 1) ? 's' : '' ?> envoyé<?= (report.envoyes > 1) ? 's' : '' ?></p>
-    <? if(report.nonEnvoyes.length) { ?>
-      <p>Messages non envoyés aux destinataires suivants car ils n'ont pas d'engagement :</p>
+    <p><b><?= report.envoyes ?></b> courriel<?= report.envoyes > 1 ? 's' : '' ?> envoyé<?= report.envoyes > 1 ? 's' : '' ?>.</p>
+
+    <? if (report.erreurs.length) { ?>
+      <h2 class="error">Échecs d'envoi</h2>
       <ul>
-        <? for (index in report.nonEnvoyes) { ?>
-          <li><?= report.nonEnvoyes[index] ?></li>
-        <? } ?>  
-      </ul>
-    <? } ?>
-    <? if(report.sansEmail.length) { ?>
-      <p>Messages non envoyés aux destinataires suivants car leur adresse email est manquante :</p>
-      <ul>
-        <? for (index in report.sansEmail) { ?>
-          <li><?= report.sansEmail[index] ?></li>
+        <? for (const e of report.erreurs) { ?>
+          <li><?= e.personne ?> (<?= e.email ?>) : <?= e.message ?></li>
         <? } ?>
       </ul>
+      <p>Ces personnes gardent le statut « à envoyer ».</p>
     <? } ?>
-    </body>
+
+    <? if (report.sansEmail.length) { ?>
+      <h2>Sans adresse email</h2>
+      <ul>
+        <? for (const p of report.sansEmail) { ?><li><?= p ?></li><? } ?>
+      </ul>
+    <? } ?>
+
+    <? if (report.homonymes.length) { ?>
+      <h2>Homonymes</h2>
+      <p>Plusieurs personnes portent le même prénom et nom ; leurs engagements ne peuvent pas être distingués.</p>
+      <ul>
+        <? for (const p of report.homonymes) { ?><li><?= p ?></li><? } ?>
+      </ul>
+    <? } ?>
+
+    <? if (report.nomIncomplet.length) { ?>
+      <h2>Nom ou prénom manquant</h2>
+      <ul>
+        <? for (const p of report.nomIncomplet) { ?><li><?= p ?></li><? } ?>
+      </ul>
+    <? } ?>
+
+    <? if (report.sansEngagement.length) { ?>
+      <h2>Sans engagement</h2>
+      <ul>
+        <? for (const p of report.sansEngagement) { ?><li><?= p ?></li><? } ?>
+      </ul>
+    <? } ?>
+  </body>
 </html>

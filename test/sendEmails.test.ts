@@ -1,28 +1,50 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { partitionRecipients, sendEmails } from '../src/sendEmails'
+import {
+  currentUserEmail,
+  htmlToPlainText,
+  partitionRecipients,
+  sendEmails,
+  testEmail,
+  testEmailData
+} from '../src/sendEmails'
+import { ConfirmationEmailData } from '../src/ConfirmationEmailTemplateParams'
 import {
   FakeSheet,
   installHtmlService,
+  installLockService,
   installMailApp,
+  installSession,
   installSpreadsheetApp
 } from './fakeSpreadsheet'
 
 afterEach(() => vi.unstubAllGlobals())
 
 const headers = ['Type', 'Condition', 'Texte']
+const simpleTemplate = () =>
+  new FakeSheet('modèle courriel', [headers, ['sujet', '', 'Pour %PRENOM%']])
 
-function workbook (extraSheets: FakeSheet[] = []) {
+function workbook (
+  extraSheets: FakeSheet[] = [],
+  options: { rejects?: RegExp; locked?: boolean; quota?: number } = {}
+) {
   const personnes = new FakeSheet('personnes', [
     ['nom', 'prénom', 'prénom nom', 'email', 'statut'],
     ['Dupont', 'Marie', 'Marie Dupont', 'marie@example.org', 'à envoyer'],
     ['Martin', 'Jean', 'Jean Martin', 'jean@example.org', 'envoyé'],
     ['Durand', 'Paul', 'Paul Durand', '', 'à envoyer'],
-    ['Petit', 'Léa', 'Léa Petit', 'lea@example.org', 'à envoyer']
+    ['Petit', 'Léa', 'Léa Petit', 'lea@example.org', 'à envoyer'],
+    ['Roux', 'Ana', 'Ana Roux', 'ana@example.org', 'à envoyer'],
+    ['Roux', 'Ana', 'Ana Roux', 'ana2@example.org', 'envoyé'],
+    ['Blanc', '', '', 'blanc@example.org', 'à envoyer'],
+    ['Noir', 'Luc', 'Luc Noir', 'luc@example.org', 'À envoyer ']
   ])
   const engagements = new FakeSheet('engagements', [
     ['personne', 'plage'],
     ['Marie Dupont', '01.01.2021 | bar | 20:00-21:00'],
-    ['Paul Durand', '01.01.2021 | bar | 20:00-21:00']
+    ['Paul Durand', '01.01.2021 | bar | 20:00-21:00'],
+    ['Ana Roux', '01.01.2021 | bar | 20:00-21:00'],
+    ['Luc Noir', '01.01.2021 | bar | 20:00-21:00'],
+    ['', '01.01.2021 | bar | 20:00-21:00']
   ])
   const contreparties = new FakeSheet('contreparties', [
     ['personne', 'contrepartie', 'remarque']
@@ -43,62 +65,114 @@ function workbook (extraSheets: FakeSheet[] = []) {
     plages,
     ...extraSheets
   ]
-  const { ui } = installSpreadsheetApp(sheets)
-  const { sent } = installMailApp()
+  const { ui, spreadsheet } = installSpreadsheetApp(sheets)
+  const { sent } = installMailApp(options.quota ?? 100, options.rejects)
   const { templates } = installHtmlService()
-  return { personnes, ui, sent, templates }
+  const lock = installLockService(options.locked)
+  return { personnes, ui, sent, templates, lock, spreadsheet }
 }
 
+const report = (templates: ReturnType<typeof workbook>['templates']) =>
+  templates.find(t => t.file === 'dist/emailReportTemplate')?.template.report
+
 describe('sendEmails', () => {
+  it('sends to the people to send to and marks their row', () => {
+    const { sent, personnes, templates } = workbook([simpleTemplate()])
+
+    sendEmails('modèle courriel')
+
+    expect(sent.map(m => m.to)).toEqual(['marie@example.org', 'luc@example.org'])
+    expect(personnes.column(5)).toEqual([
+      'envoyé',
+      'envoyé',
+      'à envoyer',
+      'à envoyer',
+      'à envoyer',
+      'envoyé',
+      'à envoyer',
+      'envoyé'
+    ])
+    expect(report(templates)).toEqual({
+      envoyes: 2,
+      erreurs: [],
+      sansEmail: ['Paul Durand'],
+      sansEngagement: ['Léa Petit'],
+      homonymes: ['Ana Roux'],
+      nomIncomplet: ['Blanc']
+    })
+  })
+
+  it('substitutes the markers of the subject and adds a text body', () => {
+    const { sent } = workbook([
+      new FakeSheet('modèle courriel', [
+        headers,
+        ['sujet', '', 'Pour %PRENOM% %NOM%'],
+        ['paragraphe', '', 'Bonjour %PRENOM%,'],
+        ['élément de liste', '', 'a & b']
+      ])
+    ])
+
+    sendEmails('modèle courriel')
+
+    expect(sent[0].subject).toBe('Pour Marie Dupont')
+    expect(sent[0].htmlBody).toBe(
+      "<p><span style=''>Bonjour Marie,</span></p><ul><li><span style=''>a &amp; b</span></li></ul>"
+    )
+    expect(sent[0].body).toBe('Bonjour Marie,\n- a & b')
+  })
+
   it('uses the template sheet it is given', () => {
-    const { sent, personnes } = workbook([
-      new FakeSheet('modèle courriel', [headers, ['sujet', '', 'Défaut']]),
+    const { sent } = workbook([
+      simpleTemplate(),
       new FakeSheet('modèle 2', [headers, ['sujet', '', 'Second modèle']])
     ])
 
     sendEmails('modèle 2')
 
-    expect(sent).toHaveLength(1)
-    expect(sent[0].to).toBe('marie@example.org')
     expect(sent[0].subject).toBe('Second modèle')
-    expect(personnes.cells[1][4]).toBe('envoyé')
   })
 
-  it('shows the report after sending', () => {
-    const { ui, templates } = workbook([
-      new FakeSheet('modèle courriel', [headers, ['sujet', '', 'S']])
-    ])
+  it('goes on after a rejected address and reports it', () => {
+    const { sent, personnes, templates, ui } = workbook([simpleTemplate()], {
+      rejects: /marie/
+    })
 
     sendEmails('modèle courriel')
 
-    expect(templates[0].file).toBe('dist/emailReportTemplate')
-    expect(templates[0].template.report).toEqual({
-      envoyes: 1,
-      nonEnvoyes: ['Petit Léa'],
-      sansEmail: ['Durand Paul']
-    })
+    expect(sent.map(m => m.to)).toEqual(['luc@example.org'])
+    expect(personnes.cells[1][4]).toBe('à envoyer')
+    expect(report(templates).envoyes).toBe(1)
+    expect(report(templates).erreurs).toEqual([
+      {
+        personne: 'Marie Dupont',
+        email: 'marie@example.org',
+        message: 'Invalid email: marie@example.org'
+      }
+    ])
     expect(ui.showModalDialog).toHaveBeenCalledTimes(1)
   })
 
-  it('leaves the status of people it could not write to untouched', () => {
-    const { personnes } = workbook([
-      new FakeSheet('modèle courriel', [headers, ['sujet', '', 'S']])
-    ])
+  it('refuses to run while another send holds the lock', () => {
+    const { sent, ui } = workbook([simpleTemplate()], { locked: true })
 
     sendEmails('modèle courriel')
 
-    expect(personnes.column(5)).toEqual([
-      'envoyé',
-      'envoyé',
-      'à envoyer',
-      'à envoyer'
-    ])
+    expect(sent).toHaveLength(0)
+    expect(ui.alerts).toEqual(['Un envoi est déjà en cours, veuillez patienter.'])
+  })
+
+  it('releases the lock and shows progress', () => {
+    const { lock, spreadsheet } = workbook([simpleTemplate()])
+
+    sendEmails('modèle courriel')
+
+    expect(lock.locked).toBe(false)
+    expect(lock.released).toBe(1)
+    expect(spreadsheet.toasts).toHaveLength(1)
   })
 
   it('refuses to send from an empty template', () => {
-    const { sent, ui } = workbook([
-      new FakeSheet('modèle courriel', [headers])
-    ])
+    const { sent, ui } = workbook([new FakeSheet('modèle courriel', [headers])])
 
     sendEmails('modèle courriel')
 
@@ -108,13 +182,7 @@ describe('sendEmails', () => {
   })
 
   it('refuses to send when the daily quota is too low', () => {
-    const { sent, ui } = workbook([
-      new FakeSheet('modèle courriel', [headers, ['sujet', '', 'S']])
-    ])
-    vi.stubGlobal('MailApp', {
-      getRemainingDailyQuota: () => 0,
-      sendEmail: () => sent.push('unexpected')
-    })
+    const { sent, ui } = workbook([simpleTemplate()], { quota: 1 })
 
     sendEmails('modèle courriel')
 
@@ -123,9 +191,7 @@ describe('sendEmails', () => {
   })
 
   it("ignores the dialog's placeholder entry", () => {
-    const { sent, ui } = workbook([
-      new FakeSheet('modèle courriel', [headers, ['sujet', '', 'S']])
-    ])
+    const { sent, ui } = workbook([simpleTemplate()])
 
     sendEmails('')
 
@@ -134,25 +200,88 @@ describe('sendEmails', () => {
   })
 })
 
+describe('testEmail', () => {
+  it('sends every test case to the current user without touching the sheet', () => {
+    const { sent, personnes } = workbook([simpleTemplate()])
+    installSession('me@example.org')
+
+    testEmail()
+
+    expect(sent).toHaveLength(6)
+    expect(sent.every(m => m.to === 'me@example.org')).toBe(true)
+    expect(personnes.column(5)).toContain('à envoyer')
+  })
+
+  it('stops with an alert when the user address is unknown', () => {
+    const { sent, ui } = workbook([simpleTemplate()])
+    installSession('', '')
+
+    testEmail()
+
+    expect(sent).toHaveLength(0)
+    expect(ui.alerts).toHaveLength(1)
+  })
+
+  it('falls back on the effective user', () => {
+    installSession('', 'owner@example.org')
+    expect(currentUserEmail()).toBe('owner@example.org')
+  })
+
+  it('covers every combination of the conditions', () => {
+    const data = testEmailData('x@y.z')
+    const keys = data.map(
+      d => `${d.estArtiste}/${d.estBenevole}/${d.listeContreparties.length > 0}`
+    )
+    expect(new Set(keys).size).toBe(6)
+    expect(data.every(d => d.listeEngagements.length > 0)).toBe(true)
+  })
+})
+
 describe('partitionRecipients', () => {
-  const person = (nom: string, email: string, engagements: string[]) => ({
+  const person = (
+    nom: string,
+    email: string,
+    engagements: string[],
+    libelle = `p ${nom}`
+  ): ConfirmationEmailData => ({
     personData: { nom, prenom: 'p', email },
+    libelle,
     listeEngagements: engagements,
     listeContreparties: [],
     estArtiste: false,
     estBenevole: false
   })
 
-  it('separates people without engagement and without email', () => {
+  it('separates people without engagement, without email, without name', () => {
     const ok = person('Ok', 'ok@example.org', ['e'])
     const result = partitionRecipients([
       ok,
       person('SansEngagement', 'x@example.org', []),
       person('SansEmail', '', ['e']),
-      person('SansRien', '', [])
+      person('SansRien', '', []),
+      person('SansNom', 'n@example.org', ['e'], '')
     ])
     expect(result.aEnvoyer).toEqual([ok])
-    expect(result.sansEngagement).toEqual(['SansEngagement p', 'SansRien p'])
-    expect(result.sansEmail).toEqual(['SansEmail p'])
+    expect(result.sansEngagement).toEqual(['p SansEngagement', 'p SansRien'])
+    expect(result.sansEmail).toEqual(['p SansEmail'])
+    expect(result.nomIncomplet).toEqual(['p SansNom'])
+    expect(result.homonymes).toEqual([])
+  })
+
+  it('detects homonyms against every person of the sheet', () => {
+    const a = person('A', 'a@example.org', ['e'], 'Ana Roux')
+    const result = partitionRecipients([a], ['Ana Roux', 'Ana Roux', 'Bob'])
+    expect(result.aEnvoyer).toEqual([])
+    expect(result.homonymes).toEqual(['p A'])
+  })
+})
+
+describe('htmlToPlainText', () => {
+  it('turns block elements into lines and decodes entities', () => {
+    expect(
+      htmlToPlainText(
+        '<h1>Titre</h1><p>Bonjour <b>A &amp; B</b><br>suite</p><ul><li>un</li><li>deux</li></ul>'
+      )
+    ).toBe('Titre\nBonjour A & B\nsuite\n- un\n- deux')
   })
 })

@@ -18,8 +18,11 @@ Dans le classeur, un menu **Actions** propose :
 - **Envoyer les emails** : envoie le courriel de confirmation à chaque personne
   dont le statut est `à envoyer`, puis passe le statut à `envoyé`. S'il y a
   plusieurs feuilles modèle, une boîte de dialogue demande laquelle utiliser.
-  Les personnes sans engagement ou sans adresse email ne reçoivent rien,
-  gardent leur statut et sont listées dans le rapport d'envoi.
+  Un seul envoi à la fois ; une adresse refusée n'interrompt pas les autres.
+  Le rapport d'envoi liste les échecs, les personnes sans adresse, les
+  homonymes (même prénom et nom, impossibles à distinguer), les noms
+  incomplets et les personnes sans engagement ; tous gardent leur statut.
+  Le sujet accepte `%PRENOM%`, `%NOM%` et `%EMAIL%`.
 - **Tester les emails** : envoie à l'utilisateur courant un jeu de courriels
   couvrant toutes les combinaisons de conditions du modèle.
 
