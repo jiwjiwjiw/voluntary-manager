@@ -6,7 +6,9 @@ import { rowHasContent } from './sheets-tools/helpers'
  * anything else sorts after the dated rows, by its text. The start time
  * breaks ties between plages of the same day.
  */
-export function plageSortKey (row: ReadonlyArray<any>): [number, string, string] {
+export function plageSortKey (
+  row: ReadonlyArray<any>
+): [number, string, number, string] {
   const date = row[0]
   let time = NaN
   if (date instanceof Date) {
@@ -16,11 +18,24 @@ export function plageSortKey (row: ReadonlyArray<any>): [number, string, string]
     if (m) time = new Date(+m[3], +m[2] - 1, +m[1]).getTime()
   }
   const debut = row[2]
-  const debutKey =
-    debut instanceof Date
-      ? `${String(debut.getHours()).padStart(2, '0')}:${String(debut.getMinutes()).padStart(2, '0')}`
-      : String(debut)
-  return [Number.isNaN(time) ? Infinity : time, String(date), debutKey]
+  return [
+    Number.isNaN(time) ? Infinity : time,
+    String(date),
+    timeOfDayInMinutes(debut),
+    String(debut)
+  ]
+}
+
+/**
+ * Minutes since midnight of a time cell (a Date) or of a time typed as text
+ * (`9:00`, `09:00`, `9h`, `9h30`, `09:00:00`); Infinity when unreadable, so
+ * that such rows sort last by their text.
+ */
+export function timeOfDayInMinutes (value: unknown): number {
+  if (value instanceof Date) return value.getHours() * 60 + value.getMinutes()
+  const m = /^(\d{1,2})\s*[:hH]\s*(\d{0,2})(?::\d{2})?$/.exec(String(value).trim())
+  if (!m) return Infinity
+  return +m[1] * 60 + (m[2] === '' ? 0 : +m[2])
 }
 
 export function comparePlages (a: ReadonlyArray<any>, b: ReadonlyArray<any>) {
@@ -85,11 +100,14 @@ export function updatePlanning () {
     const output = computePlanning(plagesData, engagementsData)
 
     // write computed data to spreadsheet
+    planningSheet.getRange('A2:B').clearContent()
     if (output.length > 0) {
-      const planning = planningSheet.getRange('A2:B')
-      planning.clearContent()
-      const newPlanning = planningSheet.getRange(2, 1, output.length, 2)
-      newPlanning.setValues(output)
+      // getRange() throws beyond the last row of the sheet: grow it first.
+      const missingRows = output.length + 1 - planningSheet.getMaxRows()
+      if (missingRows > 0) {
+        planningSheet.insertRowsAfter(planningSheet.getMaxRows(), missingRows)
+      }
+      planningSheet.getRange(2, 1, output.length, 2).setValues(output)
     }
   }
 }

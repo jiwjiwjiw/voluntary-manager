@@ -68,6 +68,21 @@ describe('comparePlages', () => {
     ])
   })
 
+  it('orders text start times by their value, not their spelling', () => {
+    const rows = [
+      row('01.01.2021', '14:00'),
+      row('01.01.2021', '9:00'),
+      row('01.01.2021', '9h30'),
+      row('01.01.2021', '09:15:00')
+    ]
+    expect(rows.sort(comparePlages).map(r => r[2])).toEqual([
+      '9:00',
+      '09:15:00',
+      '9h30',
+      '14:00'
+    ])
+  })
+
   it('puts rows without a recognisable date last, in text order', () => {
     const rows = [row('b'), row('01.01.2021'), row('a')]
     expect(rows.sort(comparePlages).map(r => r[0])).toEqual([
@@ -109,7 +124,7 @@ describe('updatePlanning', () => {
     expect(planning.column(2)).toEqual(['?', 'Marie Dupont\n?', '?'])
   })
 
-  it('leaves the planning sheet alone when there is no plage', () => {
+  it('clears the planning sheet when there is no plage left', () => {
     const plages = new FakeSheet('plages', [
       ['date', 'fonction', 'début', 'fin', 'nombre', 'libellé']
     ])
@@ -121,6 +136,32 @@ describe('updatePlanning', () => {
     installSpreadsheetApp([plages, engagements, planning])
 
     expect(() => updatePlanning()).not.toThrow()
-    expect(planning.column(1)).toEqual(['old'])
+    expect(planning.column(1)).toEqual([])
+    expect(planning.column(2)).toEqual([])
+  })
+
+  it('grows the planning sheet when there are more plages than rows', () => {
+    const rows = [1, 2, 3, 4, 5].map(i => [
+      `0${i}.01.2021`,
+      'bar',
+      '',
+      '',
+      1,
+      `0${i}.01.2021 | bar`
+    ])
+    const plages = new FakeSheet('plages', [
+      ['date', 'fonction', 'début', 'fin', 'nombre', 'libellé'],
+      ...rows
+    ])
+    const engagements = new FakeSheet('engagements', [['personne', 'plage']])
+    const planning = new FakeSheet('planning', [['plage', 'personnes']], {
+      maxRows: 3
+    })
+    installSpreadsheetApp([plages, engagements, planning])
+
+    updatePlanning()
+
+    expect(planning.getMaxRows()).toBe(6)
+    expect(planning.column(1)).toHaveLength(5)
   })
 })

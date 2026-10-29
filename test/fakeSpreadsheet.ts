@@ -250,7 +250,20 @@ export class FakeSheet {
     return 0
   }
 
+  insertRowsAfter (afterPosition: number, howMany: number) {
+    if (afterPosition !== this.maxRows) {
+      throw new Error('The fake only supports appending rows at the end')
+    }
+    this.maxRows += howMany
+    return this
+  }
+
   write (row: number, column: number, value: Cell) {
+    if (row > this.maxRows || column > this.maxColumns) {
+      throw new Error(
+        `Those rows or columns are out of bounds (${row},${column} in ${this.maxRows}x${this.maxColumns}).`
+      )
+    }
     while (this.cells.length < row) this.cells.push([])
     this.cells[row - 1][column - 1] = value
   }
