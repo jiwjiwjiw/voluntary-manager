@@ -42,7 +42,7 @@ describe('stepsForSheet', () => {
     expect(stepsForSheet('contreparties')).toEqual(['statuts'])
     expect(stepsForSheet('planning')).toEqual([])
     expect(stepsForSheet('modèle courriel')).toEqual([])
-    expect(stepsForSheet('dates')).toEqual([])
+    expect(stepsForSheet('dates')).toEqual(['validation'])
   })
 })
 

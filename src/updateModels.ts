@@ -62,6 +62,8 @@ const ALL_STEPS: UpdateStep[] = [
  *   what people were told;
  * - `engagements` feeds the planning and what people were told;
  * - `contreparties` feeds what people were told;
+ * - `dates` feeds the dropdown of `plages!A`, a list of display values since
+ *   a rule referencing a range of dates rejects the picked date;
  * - the other sheets feed nothing (dropdowns reference their ranges).
  */
 export function stepsForSheet (sheetName: string): UpdateStep[] {
@@ -74,6 +76,8 @@ export function stepsForSheet (sheetName: string): UpdateStep[] {
       return ['planning', 'statuts']
     case 'contreparties':
       return ['statuts']
+    case 'dates':
+      return ['validation']
     default:
       return []
   }

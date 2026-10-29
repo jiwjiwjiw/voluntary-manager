@@ -196,9 +196,11 @@ Les déclencheurs appellent `updateModels`. À l'ouverture et sur **Recalculer**
 tout est recalculé. À chaque édition, seul ce qui dépend de la feuille modifiée
 l'est : `personnes` → colonne C, `plages` → colonne F, planning (avec
 `planning personnes` et `synthèse`) et statuts, `engagements` → planning et
-statuts, `contreparties` → statuts ; les autres
-feuilles ne déclenchent rien. Les listes
-déroulantes référencent directement leurs plages et se mettent à jour seules.
+statuts, `contreparties` → statuts, `dates` → liste déroulante de `plages!A` ;
+les autres feuilles ne déclenchent rien. Les listes déroulantes de textes
+référencent directement leurs plages et se mettent à jour seules ; celle des
+dates est une liste de valeurs affichées, car Sheets refuse la date choisie
+dans un menu qui référence des cellules de type date.
 Un seul recalcul tourne à la fois (verrou sur le document).
 
 ## Licence
