@@ -1,6 +1,8 @@
 import { updateModels } from './updateModels'
 import { testEmail, selectEmailTemplate, sendEmails } from './sendEmails'
+import { verifierClasseur } from './checkWorkbook'
 ;(global as any).onOpen = onOpen
+;(global as any).verifierClasseur = verifierClasseur
 ;(global as any).testEmail = testEmail
 ;(global as any).selectEmailTemplate = selectEmailTemplate
 // Called by the SelectEmailTemplate dialog through google.script.run.
@@ -13,6 +15,7 @@ function onOpen () {
   ui.createMenu('Actions')
     .addItem('Autoriser le script', 'onAuthorizeScript')
     .addItem('Recalculer', 'updateModels')
+    .addItem('Vérifier le classeur', 'verifierClasseur')
     .addItem('Envoyer les emails', 'selectEmailTemplate')
     .addItem('Tester les emails', 'testEmail')
     .addToUi()
