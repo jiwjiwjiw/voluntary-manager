@@ -1,5 +1,6 @@
 import { updatePlanningPersonnes } from './planningPersonnes'
 import { rowHasContent } from './sheets-tools/helpers'
+import { updateSynthese } from './synthese'
 
 /**
  * Chronological sort key of a `plages` row ([date, fonction, début, fin, …]).
@@ -115,6 +116,21 @@ export function updatePlanning () {
     updatePlanningPersonnes(
       spreadsheet,
       plagesSorted.map(row => String(row[5] ?? '')),
+      engagementsData
+    )
+
+    // and summed up per date and per function; dates as displayed, since
+    // getValues() returns Date objects for date cells
+    const displayed = plagesRange!.getDisplayValues().filter(rowHasContent)
+    const dateOf = new Map(displayed.map(row => [row[5], row[0]]))
+    updateSynthese(
+      spreadsheet,
+      plagesSorted.map(row => ({
+        date: dateOf.get(String(row[5] ?? '')) ?? String(row[0] ?? ''),
+        fonction: String(row[1] ?? ''),
+        nombre: row[4],
+        libelle: String(row[5] ?? '')
+      })),
       engagementsData
     )
   }
