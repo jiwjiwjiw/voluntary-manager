@@ -55,6 +55,8 @@ La première ligne de chaque feuille est une ligne d'en-tête.
 | `fonctions` | A nom, B type | B vaut `artiste` ou `bénévole`. |
 | `dates` | A date | Liste des dates autorisées pour `plages!A`. |
 | `planning` | **A plage, B personnes** | Feuille entièrement calculée, triée par date puis heure de début. `?` marque une place vacante. |
+| `planning personnes` | **A personne, B nombre de plages, C plages** | Feuille entièrement calculée, créée au besoin : les plages de chaque personne dans l'ordre chronologique. |
+| `synthèse` | **A date ou fonction, B places, C pourvues, D vacantes, E taux** | Feuille entièrement calculée, créée au besoin : remplissage par date (ordre chronologique) puis par fonction (ordre alphabétique), avec un total par tableau. |
 | `modèle courriel` | A type, B condition, C texte | Modèle du courriel, une ligne par bloc. |
 | `config` (facultative) | A clé, B valeur | Réglages de l'expéditeur, voir ci-dessous. |
 
@@ -103,6 +105,9 @@ src/
   updatePlages.ts                    calcule plages!F
   propagateRename.ts                 reporte un libellé modifié dans les références
   updatePlanning.ts                  calcule la feuille planning
+  planningPersonnes.ts               calcule la feuille planning personnes
+  synthese.ts                        calcule la feuille synthèse (remplissage)
+  computedSheet.ts                   écriture d'une feuille entièrement calculée
   sendEmails.ts                      collecte des destinataires et envoi
   checkWorkbook.ts                   vérification de cohérence du classeur
   checkReportTemplate.html           rapport de vérification
@@ -189,8 +194,9 @@ autant de recalculs que de personnes l'ayant fait.
 
 Les déclencheurs appellent `updateModels`. À l'ouverture et sur **Recalculer**,
 tout est recalculé. À chaque édition, seul ce qui dépend de la feuille modifiée
-l'est : `personnes` → colonne C, `plages` → colonne F, planning et statuts,
-`engagements` → planning et statuts, `contreparties` → statuts ; les autres
+l'est : `personnes` → colonne C, `plages` → colonne F, planning (avec
+`planning personnes` et `synthèse`) et statuts, `engagements` → planning et
+statuts, `contreparties` → statuts ; les autres
 feuilles ne déclenchent rien. Les listes
 déroulantes référencent directement leurs plages et se mettent à jour seules.
 Un seul recalcul tourne à la fois (verrou sur le document).
