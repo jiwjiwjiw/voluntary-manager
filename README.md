@@ -53,6 +53,13 @@ La première ligne de chaque feuille est une ligne d'en-tête.
 Une personne est « artiste » (resp. « bénévole ») dès qu'une de ses plages a
 une fonction de ce type dans `fonctions`.
 
+Les libellés calculés (`personnes!C`, `plages!F`) servent de clés dans
+`engagements` et `contreparties`. Quand un nom ou une plage est modifié, le
+script reporte le nouveau libellé dans ces références. Il s'abstient quand
+c'est ambigu (deux lignes portaient le même ancien libellé, ou le nouveau
+libellé existait déjà sur une autre ligne) ; **Vérifier le classeur** signale
+alors les références orphelines.
+
 Dans `modèle courriel`, la colonne A vaut `sujet`, `titre`, `sous-titre`,
 `paragraphe`, `élément de liste` ou `aucun`. La colonne B contient une
 condition d'inclusion (vide = toujours inclus) parmi : `a au moins un code`,
@@ -69,6 +76,7 @@ src/
   updateModels.ts                    recalcul des données dérivées et validations
   updatePersonnes.ts                 calcule personnes!C
   updatePlages.ts                    calcule plages!F
+  propagateRename.ts                 reporte un libellé modifié dans les références
   updatePlanning.ts                  calcule la feuille planning
   sendEmails.ts                      collecte des destinataires et envoi
   checkWorkbook.ts                   vérification de cohérence du classeur

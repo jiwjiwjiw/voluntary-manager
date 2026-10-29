@@ -1,3 +1,5 @@
+import { applyRenames, computeRenames } from './propagateRename'
+
 /**
  * Composes the label of a `plages` row ([date, fonction, début, fin, …]) as
  * `date | fonction | début-fin`. Missing parts are left out together with
@@ -20,15 +22,21 @@ export function composePlageLabel (row: ReadonlyArray<unknown>): string {
   return texte
 }
 
+/**
+ * Recomputes `plages!F` and carries any changed label over to the
+ * references in `engagements!B`.
+ */
 export function updatePlages () {
-  const plagesSheet = SpreadsheetApp.getActive().getSheetByName('plages')
-  const plagesRange = plagesSheet?.getRange('A2:F')
+  const spreadsheet = SpreadsheetApp.getActive()
+  const plagesSheet = spreadsheet.getSheetByName('plages')
+  if (!plagesSheet) return
   // Display values, so that a date or time cell contributes the text shown
   // in the sheet rather than a JavaScript Date.
-  const plagesData = plagesRange?.getDisplayValues()
-  const output = plagesData?.map(x => [composePlageLabel(x)])
-  if (output) {
-    const outputRange = plagesSheet?.getRange('F2:F')
-    outputRange?.setValues(output)
-  }
+  const plagesData = plagesSheet.getRange('A2:F').getDisplayValues()
+  const oldLabels = plagesData.map(x => x[5])
+  const newLabels = plagesData.map(composePlageLabel)
+  plagesSheet.getRange('F2:F').setValues(newLabels.map(label => [label]))
+
+  const renames = computeRenames(oldLabels, newLabels)
+  applyRenames(spreadsheet.getSheetByName('engagements'), 'B2:B', renames)
 }
