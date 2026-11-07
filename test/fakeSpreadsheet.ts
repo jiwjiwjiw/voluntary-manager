@@ -248,6 +248,13 @@ export class FakeSheet {
     return this.maxColumns
   }
 
+  getLastColumn () {
+    return Math.max(0, ...this.cells.map(r => {
+      for (let c = r.length - 1; c >= 0; c--) if (cellToString(r[c]) !== '') return c + 1
+      return 0
+    }))
+  }
+
   getLastRow () {
     for (let r = this.cells.length - 1; r >= 0; r--) {
       if (this.cells[r].some(v => cellToString(v) !== '')) return r + 1
