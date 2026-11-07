@@ -13,13 +13,10 @@ import {
 import { readConfig } from './config'
 import { empreinte, EmpreintesStore } from './empreintes'
 import { estAEnvoyer, STATUT_ENVOYE } from './statuts'
+import { findPersoColumn, readTextesPerso } from './textePerso'
 
 /** Column of the send status in `personnes` (E). */
 export const STATUS_COLUMN = 5
-
-/** Column of the text written for one person, `%PERSO%` in the template (F). */
-export const PERSO_COLUMN = 6
-export const PERSO_HEADER = 'texte perso mail'
 
 /** What the confirmation dialog shows before anything is sent. */
 export interface SendSummary {
@@ -350,6 +347,7 @@ function sendEmails2 (
     const spreadsheet = SpreadsheetApp.getActive()
     spreadsheet.toast(`Envoi de ${envois.length} courriel(s)…`, 'Envoi en cours')
     const personnesSheet = spreadsheet.getSheetByName('personnes')
+    const persoColumn = personnesSheet ? findPersoColumn(personnesSheet) : undefined
     const config = readConfig(spreadsheet)
     for (const d of envois) {
       const { subject, html } = template.constructHtml(d)
@@ -375,7 +373,9 @@ function sendEmails2 (
       if (d.row !== undefined) {
         personnesSheet?.getRange(d.row, STATUS_COLUMN).setValue(STATUT_ENVOYE)
         // The texte perso is for one mail: once sent, it is erased.
-        if (d.textePerso) personnesSheet?.getRange(d.row, PERSO_COLUMN).setValue('')
+        if (d.textePerso && persoColumn !== undefined) {
+          personnesSheet?.getRange(d.row, persoColumn).setValue('')
+        }
         // Remember what was confirmed, to flag later changes « à renvoyer ».
         // Without the erased text, so that any text written later, even the
         // same one, calls for a new mail.
@@ -410,8 +410,9 @@ const sameText = (a: unknown, b: string) =>
  * cannot cause a false match. An engagement on a function without plage
  * names the function itself.
  *
- * @param destinataires rows of `personnes!A:F` to send to: [nom, prénom, « prénom nom », email, statut,
- *   texte perso]; a seventh element, when present, is the sheet row number
+ * @param destinataires rows of `personnes!A:E` to send to, followed by the texte perso:
+ *   [nom, prénom, « prénom nom », email, statut, texte perso]; a seventh element, when
+ *   present, is the sheet row number
  * @param engagements rows of `engagements!A:B`: [personne, libellé de plage ou fonction]
  * @param contreparties rows of `contreparties!A:C`: [personne, contrepartie, remarque]
  * @param fonctions rows of `fonctions!A:B`: [nom, type] with type `artiste` or `bénévole`
@@ -487,7 +488,11 @@ export function collectData (onlyToSend = true): {
   // get data from spreadsheet
   const classeur = SpreadsheetApp.getActive()
   const personnesSheet = classeur.getSheetByName('personnes')
-  const personnesData = personnesSheet?.getRange('A2:F').getValues() ?? []
+  const personnesValues = personnesSheet?.getRange('A2:E').getValues() ?? []
+  const textesPerso = personnesSheet
+    ? readTextesPerso(personnesSheet, personnesValues.length)
+    : []
+  const personnesData = personnesValues.map((row, index) => [...row, textesPerso[index] ?? ''])
   const libelles = personnesData
     .filter(rowHasContent)
     .map(row => String(row[2] ?? ''))

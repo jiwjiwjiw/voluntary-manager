@@ -1,6 +1,6 @@
 import { EmpreintesStore } from './empreintes'
 import { applyRenames, computeRenames } from './propagateRename'
-import { PERSO_COLUMN, PERSO_HEADER } from './sendEmails'
+import { ensurePersoColumn } from './textePerso'
 
 /**
  * Composes the « prénom nom » label of a `personnes` row ([nom, prénom, …]).
@@ -9,18 +9,6 @@ import { PERSO_COLUMN, PERSO_HEADER } from './sendEmails'
  */
 export function composeFullName (row: ReadonlyArray<unknown>): string {
   return row[0] && row[1] ? `${row[1]} ${row[0]}` : ''
-}
-
-/**
- * Gives `personnes` its texte perso column: grows the sheet when it is too
- * narrow and names the column when its header is empty.
- */
-export function ensurePersoColumn (sheet: GoogleAppsScript.Spreadsheet.Sheet) {
-  if (sheet.getMaxColumns() < PERSO_COLUMN) {
-    sheet.insertColumnsAfter(sheet.getMaxColumns(), PERSO_COLUMN - sheet.getMaxColumns())
-  }
-  const header = sheet.getRange(1, PERSO_COLUMN)
-  if (String(header.getValue() ?? '').trim() === '') header.setValue(PERSO_HEADER)
 }
 
 /**

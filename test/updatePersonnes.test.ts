@@ -43,15 +43,16 @@ describe('updatePersonnes', () => {
     expect(personnes.cells[0][5]).toBe('texte perso mail')
   })
 
-  it('keeps a texte perso header the users renamed', () => {
+  it('leaves another column F alone and adds the texte perso after it', () => {
     const personnes = new FakeSheet('personnes', [
-      ['nom', 'prénom', 'prénom nom', 'email', 'statut', 'mot perso']
+      ['nom', 'prénom', 'prénom nom', 'email', 'statut', 'remarques']
     ])
     installSpreadsheetApp([personnes])
 
     updatePersonnes()
 
-    expect(personnes.cells[0][5]).toBe('mot perso')
+    expect(personnes.cells[0][5]).toBe('remarques')
+    expect(personnes.cells[0][6]).toBe('texte perso mail')
   })
 
   it('does nothing when the sheet is missing', () => {

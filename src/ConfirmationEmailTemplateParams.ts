@@ -18,7 +18,7 @@ export interface ConfirmationEmailData {
   listeContreparties: string[]
   estArtiste: boolean
   estBenevole: boolean
-  /** Text written for this person only (personnes!F), '' or absent when none. */
+  /** Text written for this person only (column « texte perso mail » of personnes), '' or absent when none. */
   textePerso?: string
 }
 

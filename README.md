@@ -48,7 +48,7 @@ La première ligne de chaque feuille est une ligne d'en-tête.
 
 | Feuille | Colonnes | Remarques |
 |---|---|---|
-| `personnes` | A nom, B prénom, **C « prénom nom »**, D email, E statut d'envoi, F texte perso mail | C est calculée. E vaut `à envoyer`, `envoyé`, `réception confirmée` ou `à renvoyer`. F, facultatif, est un texte propre à la personne, inséré par `%PERSO%` dans son prochain courriel puis effacé ; le script crée la colonne si son en-tête est vide. |
+| `personnes` | A nom, B prénom, **C « prénom nom »**, D email, E statut d'envoi, puis une colonne d'en-tête `texte perso mail` | C est calculée. E vaut `à envoyer`, `envoyé`, `réception confirmée` ou `à renvoyer`. La colonne `texte perso mail`, trouvée par son en-tête après E, contient un texte facultatif propre à la personne, inséré par `%PERSO%` dans son prochain courriel puis effacé ; le script la crée à droite des colonnes utilisées si aucune n'a cet en-tête. Les autres colonnes après E sont libres. |
 | `plages` | A date, B fonction, C début, D fin, E nombre de personnes, **F libellé** | F est calculée : `date \| fonction \| début-fin`. Date et nombre sont facultatifs ; une plage sans nombre n'a pas de place vacante. |
 | `engagements` | A personne, B plage ou fonction | A référence `personnes!C`. B référence `plages!F`, ou le nom d'une fonction qui n'a aucune plage (costumes, technique…), pour un engagement sur la fonction entière, sans horaire ni nombre. |
 | `contreparties` | A personne, B contrepartie, C remarque | A référence `personnes!C`, ou reste vide pour un code pas encore attribué. |
