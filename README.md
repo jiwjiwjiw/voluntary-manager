@@ -101,7 +101,9 @@ accepte du texte enrichi (gras, italique, liens…) et les marqueurs `%PRENOM%`,
 `%PERSO%` (le texte perso, vide s'il n'y en a pas : la condition
 `a un texte perso` évite alors un paragraphe vide). Les listes insérées par
 `%LISTE_ENGAGEMENTS%` et `%LISTE_CONTREPARTIES%` prennent la police, la
-taille et la couleur du texte dans lequel le marqueur est écrit.
+taille et la couleur du texte dans lequel le marqueur est écrit ou, si ce
+texte n'en a pas (ligne `aucun`, titre, cellule sans mise en forme), du texte
+qui les précède dans le courriel.
 
 ## Structure du dépôt
 

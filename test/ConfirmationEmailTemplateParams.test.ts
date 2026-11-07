@@ -66,10 +66,19 @@ describe('insertData', () => {
     )
   })
 
-  it('leaves a list unstyled outside any styled text', () => {
-    expect(params.insertData("<span style='color:red'>x</span>%LISTE_CONTREPARTIES%", data())).toBe(
-      "<span style='color:red'>x</span><ul></ul>"
+  it('gives a list outside styled text the style of the text before it, else after it', () => {
+    // a row of type « aucun » holding the marker alone
+    expect(params.insertData("<p><span style='a:1'>x</span></p>%LISTE_CONTREPARTIES%", data())).toBe(
+      "<p><span style='a:1'>x</span></p><ul style=\"a:1\"></ul>"
     )
+    expect(
+      params.insertData("<h1>Titre</h1>%LISTE_CONTREPARTIES%<p><span style='b:2'>y</span></p>", data())
+    ).toBe("<h1>Titre</h1><ul style=\"b:2\"></ul><p><span style='b:2'>y</span></p>")
+    // a cell without explicit format, after styled text
+    expect(
+      params.insertData("<p><span style='a:1'>x</span></p><p><span style=''>%LISTE_CONTREPARTIES%</span></p>", data())
+    ).toBe("<p><span style='a:1'>x</span></p><p><span style=''><ul style=\"a:1\"></ul></span></p>")
+    expect(params.insertData('%LISTE_CONTREPARTIES%', data())).toBe('<ul></ul>')
   })
 
   it('does not substitute a marker found in an inserted value', () => {
