@@ -40,25 +40,33 @@ export class ConfirmationEmailTemplateParams implements EmailTemplateParams {
   ]
 
   /**
-   * Substitutes the markers in the HTML body. Values are escaped, and the
-   * replacement is a function so that `$` sequences in a value are inserted
-   * literally (a string replacement would interpret `$&`, `$'`…).
+   * Substitutes the markers in the HTML body, in one pass, so that a value
+   * holding a marker (a texte perso quoting « %NOM% ») is left as is. Values
+   * are escaped, and the replacement is a function so that `$` sequences in
+   * a value are inserted literally (a string replacement would interpret
+   * `$&`, `$'`…).
+   *
+   * A list takes the style of the text its marker is written in: a <ul>
+   * cannot stay inside the styled <span> of that text, mail clients move it
+   * out, and it would otherwise show in their default font.
    */
   insertData (html: string, data: ConfirmationEmailData): string {
-    const list = (items: string[]) =>
-      `<ul>${items.map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul>`
-    const values: Record<string, string> = {
-      '%PRENOM%': escapeHtml(data.personData.prenom),
-      '%NOM%': escapeHtml(data.personData.nom),
-      '%EMAIL%': escapeHtml(data.personData.email),
-      '%LISTE_ENGAGEMENTS%': list(data.listeEngagements),
-      '%LISTE_CONTREPARTIES%': list(data.listeContreparties),
-      '%PERSO%': textToHtml(data.textePerso ?? '')
+    const list = (items: string[], css: string) =>
+      `<ul${css ? ` style="${escapeHtml(css)}"` : ''}>` +
+      items.map(x => `<li>${escapeHtml(x)}</li>`).join('') +
+      '</ul>'
+    const values: Record<string, (css: string) => string> = {
+      '%PRENOM%': () => escapeHtml(data.personData.prenom),
+      '%NOM%': () => escapeHtml(data.personData.nom),
+      '%EMAIL%': () => escapeHtml(data.personData.email),
+      '%LISTE_ENGAGEMENTS%': css => list(data.listeEngagements, css),
+      '%LISTE_CONTREPARTIES%': css => list(data.listeContreparties, css),
+      '%PERSO%': () => textToHtml(data.textePerso ?? '')
     }
-    for (const marker of Object.keys(values)) {
-      html = html.replaceAll(marker, () => values[marker])
-    }
-    return html
+    const pattern = new RegExp(Object.keys(values).join('|'), 'g')
+    return html.replace(pattern, (marker: string, offset: number) =>
+      values[marker](enclosingStyle(html, offset))
+    )
   }
 
   /** Substitutes the person markers in the plain-text subject. */
@@ -100,4 +108,19 @@ export class ConfirmationEmailTemplateParams implements EmailTemplateParams {
     }
     return conditionOk
   }
+}
+
+const SPAN_OPEN = "<span style='"
+
+/**
+ * The inline style of the `<span style='…'>` that contains position
+ * `offset` of the HTML built by EmailTemplate (one span per rich text run,
+ * never nested); '' outside any span.
+ */
+export function enclosingStyle (html: string, offset: number): string {
+  const open = html.lastIndexOf(SPAN_OPEN, offset)
+  if (open === -1 || html.lastIndexOf('</span>', offset) > open) return ''
+  const start = open + SPAN_OPEN.length
+  const end = html.indexOf("'>", start)
+  return end === -1 || end > offset ? '' : html.slice(start, end)
 }
