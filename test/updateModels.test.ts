@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { empreinte } from '../src/empreintes'
 import { stepsForSheet, updateModels } from '../src/updateModels'
+import { ValidationHandler } from '../src/sheets-tools/ValidationHandler'
 import {
   FakeSheet,
   installLockService,
@@ -8,7 +9,11 @@ import {
   installSpreadsheetApp
 } from './fakeSpreadsheet'
 
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => {
+  vi.unstubAllGlobals()
+  // A singleton: each Apps Script run starts with a fresh one, each test should too.
+  ;(ValidationHandler as any)._instance = undefined
+})
 
 function workbook () {
   const personnes = new FakeSheet('personnes', [
@@ -69,6 +74,29 @@ describe('updateModels', () => {
     expect(engagements.column(2)).toEqual(['régie', '01.01.2021 | buvette | 20:00-21:00'])
   })
 
+  it('renews an old status list before flagging « à renvoyer »', () => {
+    const { personnes, engagements, sheets } = workbook()
+    personnes.cells[1][4] = 'envoyé'
+    engagements.cells.push(['Marie Dupont', '01.01.2021 | bar | 20:00-21:00'])
+    // the dropdown left by a version that did not know « à renvoyer »
+    personnes.validations.push({
+      row: 2,
+      column: 5,
+      numRows: 10,
+      numColumns: 1,
+      rule: { allowInvalid: false, values: ['à envoyer', 'envoyé', 'réception confirmée'] }
+    })
+    installSpreadsheetApp(sheets)
+    installPropertiesService({
+      empreintes: JSON.stringify({
+        'Marie Dupont': empreinte({ listeEngagements: [], listeContreparties: [] })
+      })
+    })
+
+    expect(() => updateModels()).not.toThrow()
+    expect(personnes.cells[1][4]).toBe('à renvoyer')
+  })
+
   it('does not merge two functions renamed into one', () => {
     const { plages, sheets } = workbook()
     const fonctions = sheets.find(s => s.getName() === 'fonctions')!
@@ -88,7 +116,9 @@ describe('updateModels', () => {
     expect(personnes.cells[1][2]).toBe('Marie Dupont')
     expect(plages.cells[1][5]).toBe('01.01.2021 | bar | 20:00-21:00')
     expect(planning.column(1)).toEqual(['01.01.2021 | bar | 20:00-21:00'])
-    expect(sheets.flatMap(s => s.validations)).toHaveLength(9)
+    // one rule per validated range (a rule set twice replaces the first)
+    const ranges = sheets.flatMap(s => s.validations.map(v => `${s.getName()}!${v.row}:${v.column}`))
+    expect(new Set(ranges).size).toBe(9)
     expect(modele.validations).toHaveLength(2)
     expect(lock.released).toBe(1)
   })

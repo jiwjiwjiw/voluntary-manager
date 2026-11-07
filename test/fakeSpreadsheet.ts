@@ -7,7 +7,8 @@
  * - a sheet has `maxRows` rows, which is more than the rows holding data, so
  *   open-ended ranges such as `A2:F` include trailing empty rows;
  * - `getLastRow()` is the last row that has content;
- * - `setValues()` throws when the dimensions do not match the range.
+ * - `setValues()` throws when the dimensions do not match the range;
+ * - a write that a strict list validation of the cell rejects throws.
  */
 import { vi } from 'vitest'
 
@@ -290,6 +291,26 @@ export class FakeSheet {
     if (row > this.maxRows || column > this.maxColumns) {
       throw new Error(
         `Those rows or columns are out of bounds (${row},${column} in ${this.maxRows}x${this.maxColumns}).`
+      )
+    }
+    // Like Sheets, a script write is refused by a strict list rule.
+    const rule = [...this.validations]
+      .reverse()
+      .find(
+        v =>
+          row >= v.row &&
+          row < v.row + v.numRows &&
+          column >= v.column &&
+          column < v.column + v.numColumns
+      )?.rule
+    if (
+      rule?.values &&
+      !rule.allowInvalid &&
+      value !== '' &&
+      !rule.values.includes(String(value))
+    ) {
+      throw new Error(
+        `Les données que vous avez saisies dans la cellule ne respectent pas les règles de validation des données définies sur cette cellule. Veuillez saisir l'une des valeurs suivantes : ${rule.values.join(', ')}.`
       )
     }
     while (this.cells.length < row) this.cells.push([])

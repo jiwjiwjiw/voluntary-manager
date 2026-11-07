@@ -126,10 +126,13 @@ export function updateModels (e?: TriggerEvent) {
     if (steps.includes('fonctions') && e && 'range' in e) propagateFonctionRename(e)
     if (steps.includes('personnes')) updatePersonnes()
     if (steps.includes('plages')) updatePlages()
+    // Dropdowns before the statuses: a workbook from an older version may
+    // still hold a status list without « à renvoyer », which would reject
+    // the write and stop the run before the list is renewed.
+    if (steps.includes('validation')) updateValidation()
+    else if (steps.includes('cibles')) updateEngagementsValidation()
     if (steps.includes('planning')) updatePlanning()
     if (steps.includes('statuts')) updateStatuts()
-    if (steps.includes('cibles')) updateEngagementsValidation()
-    if (steps.includes('validation')) updateValidation()
   } finally {
     lock.releaseLock()
   }
