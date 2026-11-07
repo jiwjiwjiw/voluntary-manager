@@ -31,6 +31,29 @@ describe('updatePersonnes', () => {
     expect(personnes.cells[2][2]).toBe('')
   })
 
+  it('adds the texte perso column, growing a narrow sheet', () => {
+    const personnes = new FakeSheet('personnes', [
+      ['nom', 'prénom', 'prénom nom', 'email', 'statut']
+    ])
+    installSpreadsheetApp([personnes])
+
+    updatePersonnes()
+
+    expect(personnes.getMaxColumns()).toBe(6)
+    expect(personnes.cells[0][5]).toBe('texte perso mail')
+  })
+
+  it('keeps a texte perso header the users renamed', () => {
+    const personnes = new FakeSheet('personnes', [
+      ['nom', 'prénom', 'prénom nom', 'email', 'statut', 'mot perso']
+    ])
+    installSpreadsheetApp([personnes])
+
+    updatePersonnes()
+
+    expect(personnes.cells[0][5]).toBe('mot perso')
+  })
+
   it('does nothing when the sheet is missing', () => {
     installSpreadsheetApp([])
     expect(() => updatePersonnes()).not.toThrow()

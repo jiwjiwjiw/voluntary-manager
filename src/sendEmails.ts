@@ -17,6 +17,10 @@ import { estAEnvoyer, STATUT_ENVOYE } from './statuts'
 /** Column of the send status in `personnes` (E). */
 export const STATUS_COLUMN = 5
 
+/** Column of the text written for one person, `%PERSO%` in the template (F). */
+export const PERSO_COLUMN = 6
+export const PERSO_HEADER = 'texte perso mail'
+
 /** What the confirmation dialog shows before anything is sent. */
 export interface SendSummary {
   templates: string[]
@@ -63,7 +67,10 @@ export function selectEmailTemplate () {
   SpreadsheetApp.getUi().showModalDialog(html, 'Envoyer les emails')
 }
 
-/** Every combination of the template conditions, for test mails and previews. */
+/**
+ * Every combination of the template conditions, for test mails and previews;
+ * the richest case also carries a texte perso.
+ */
 export function testEmailData (email: string): ConfirmationEmailData[] {
   const engagements = [
     '01.01.2021 | test | 20:00-21:00',
@@ -95,10 +102,13 @@ export function testEmailData (email: string): ConfirmationEmailData[] {
       "contrepartie 1 (valable pour n'importe quelle représentation)",
       "contrepartie 2 (valable pour n'importe quelle représentation)"
     ]),
-    cas('ArtisteEtBenevoleAvecContrepartie', true, true, [
-      "contrepartie 1 (valable pour n'importe quelle représentation)",
-      'contrepartie 2 (valable uniquement le premier weekend)'
-    ])
+    {
+      ...cas('ArtisteEtBenevoleAvecContrepartie', true, true, [
+        "contrepartie 1 (valable pour n'importe quelle représentation)",
+        'contrepartie 2 (valable uniquement le premier weekend)'
+      ]),
+      textePerso: 'Texte perso de test.\nSur deux lignes.'
+    }
   ]
 }
 
@@ -395,8 +405,8 @@ const sameText = (a: unknown, b: string) =>
  * part of another one (bar / barman) or that appears in a date or a name
  * cannot cause a false match.
  *
- * @param destinataires rows of `personnes!A:E` to send to: [nom, prénom, « prénom nom », email, statut];
- *   a sixth element, when present, is the sheet row number
+ * @param destinataires rows of `personnes!A:F` to send to: [nom, prénom, « prénom nom », email, statut,
+ *   texte perso]; a seventh element, when present, is the sheet row number
  * @param engagements rows of `engagements!A:B`: [personne, libellé de plage]
  * @param contreparties rows of `contreparties!A:C`: [personne, contrepartie, remarque]
  * @param fonctions rows of `fonctions!A:B`: [nom, type] with type `artiste` or `bénévole`
@@ -445,11 +455,12 @@ export function buildEmailData (
         email: String(d[3] ?? '')
       },
       libelle,
-      row: typeof d[5] === 'number' ? d[5] : undefined,
+      row: typeof d[6] === 'number' ? d[6] : undefined,
       listeEngagements,
       listeContreparties,
       estArtiste: aUneFonctionParmi(listeEngagements, fonctionsArtiste),
-      estBenevole: aUneFonctionParmi(listeEngagements, fonctionsBenevole)
+      estBenevole: aUneFonctionParmi(listeEngagements, fonctionsBenevole),
+      textePerso: String(d[5] ?? '').trim()
     })
   }
   return data
@@ -467,7 +478,7 @@ export function collectData (onlyToSend = true): {
   // get data from spreadsheet
   const classeur = SpreadsheetApp.getActive()
   const personnesSheet = classeur.getSheetByName('personnes')
-  const personnesData = personnesSheet?.getRange('A2:E').getValues() ?? []
+  const personnesData = personnesSheet?.getRange('A2:F').getValues() ?? []
   const libelles = personnesData
     .filter(rowHasContent)
     .map(row => String(row[2] ?? ''))

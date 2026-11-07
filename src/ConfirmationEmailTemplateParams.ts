@@ -1,5 +1,5 @@
 import { EmailTemplateParams } from './sheets-tools/EmailTemplate'
-import { escapeHtml } from './sheets-tools/helpers'
+import { escapeHtml, textToHtml } from './sheets-tools/helpers'
 
 /** Everything the confirmation email needs to know about one recipient. */
 export interface ConfirmationEmailData {
@@ -18,6 +18,8 @@ export interface ConfirmationEmailData {
   listeContreparties: string[]
   estArtiste: boolean
   estBenevole: boolean
+  /** Text written for this person only (personnes!F), '' or absent when none. */
+  textePerso?: string
 }
 
 export class ConfirmationEmailTemplateParams implements EmailTemplateParams {
@@ -33,7 +35,8 @@ export class ConfirmationEmailTemplateParams implements EmailTemplateParams {
     'est artiste',
     'est bénévole',
     'est artiste et a au moins un code',
-    'est bénévole et a au moins un code'
+    'est bénévole et a au moins un code',
+    'a un texte perso'
   ]
 
   /**
@@ -49,7 +52,8 @@ export class ConfirmationEmailTemplateParams implements EmailTemplateParams {
       '%NOM%': escapeHtml(data.personData.nom),
       '%EMAIL%': escapeHtml(data.personData.email),
       '%LISTE_ENGAGEMENTS%': list(data.listeEngagements),
-      '%LISTE_CONTREPARTIES%': list(data.listeContreparties)
+      '%LISTE_CONTREPARTIES%': list(data.listeContreparties),
+      '%PERSO%': textToHtml(data.textePerso ?? '')
     }
     for (const marker of Object.keys(values)) {
       html = html.replaceAll(marker, () => values[marker])
@@ -87,6 +91,9 @@ export class ConfirmationEmailTemplateParams implements EmailTemplateParams {
         break
       case 'est bénévole et a au moins un code':
         conditionOk = data.estBenevole && data.listeContreparties.length > 0
+        break
+      case 'a un texte perso':
+        conditionOk = (data.textePerso ?? '') !== ''
         break
       default:
         break

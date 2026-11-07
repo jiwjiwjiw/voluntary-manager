@@ -57,9 +57,18 @@ describe('buildEmailData', () => {
         ],
         listeContreparties: ['entrée gratuite (premier weekend)', 'boisson'],
         estArtiste: true,
-        estBenevole: true
+        estBenevole: true,
+        textePerso: ''
       }
     ])
+  })
+
+  it('reads the texte perso of the sixth column, trimmed', () => {
+    const destinataires = [
+      ['Martin', 'Jean', 'Jean Martin', 'j@example.org', 'à envoyer', '  Merci pour le gâteau !\n ']
+    ]
+    const [data] = buildEmailData(destinataires, [], [], fonctions, plages)
+    expect(data.textePerso).toBe('Merci pour le gâteau !')
   })
 
   it('flags neither role for a person without engagement', () => {
@@ -71,8 +80,8 @@ describe('buildEmailData', () => {
     expect(data.estBenevole).toBe(false)
   })
 
-  it('keeps the sheet row given as sixth element', () => {
-    const destinataires = [['Martin', 'Jean', 'Jean Martin', 'j@example.org', 'à envoyer', 7]]
+  it('keeps the sheet row given as seventh element', () => {
+    const destinataires = [['Martin', 'Jean', 'Jean Martin', 'j@example.org', 'à envoyer', '', 7]]
     const [data] = buildEmailData(destinataires, [], [], fonctions, plages)
     expect(data.row).toBe(7)
   })

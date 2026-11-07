@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { empreinte } from '../src/empreintes'
 import { stepsForSheet, updateModels } from '../src/updateModels'
 import {
   FakeSheet,
@@ -36,7 +37,7 @@ const changeOf = (changeType: string) => ({ changeType }) as any
 
 describe('stepsForSheet', () => {
   it('maps each source sheet to what it feeds', () => {
-    expect(stepsForSheet('personnes')).toEqual(['personnes'])
+    expect(stepsForSheet('personnes')).toEqual(['personnes', 'statuts'])
     expect(stepsForSheet('plages')).toEqual(['plages', 'planning', 'statuts'])
     expect(stepsForSheet('engagements')).toEqual(['planning', 'statuts'])
     expect(stepsForSheet('contreparties')).toEqual(['statuts'])
@@ -90,6 +91,26 @@ describe('updateModels', () => {
 
     updateModels(changeOf('REMOVE_ROW'))
     expect(personnes.cells[1][2]).toBe('Marie Dupont')
+  })
+
+  it('flags « à renvoyer » when a texte perso is written for a sent person', () => {
+    const { personnes, engagements, sheets } = workbook()
+    personnes.cells[1][4] = 'envoyé'
+    personnes.cells[1][2] = 'Marie Dupont'
+    engagements.cells.push(['Marie Dupont', 'p'])
+    installSpreadsheetApp(sheets)
+    installPropertiesService({
+      empreintes: JSON.stringify({
+        'Marie Dupont': empreinte({ listeEngagements: ['p'], listeContreparties: [] })
+      })
+    })
+
+    updateModels(editOn(personnes))
+    expect(personnes.cells[1][4]).toBe('envoyé')
+
+    personnes.cells[1][5] = 'Merci pour le gâteau !'
+    updateModels(editOn(personnes))
+    expect(personnes.cells[1][4]).toBe('à renvoyer')
   })
 
   it('gives up when the lock is held', () => {
