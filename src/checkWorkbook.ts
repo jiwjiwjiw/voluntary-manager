@@ -1,3 +1,4 @@
+import { fonctionsSansPlage } from './cibles'
 import { rowHasContent } from './sheets-tools/helpers'
 import { estAEnvoyer } from './statuts'
 import { timeOfDayInMinutes } from './updatePlanning'
@@ -217,6 +218,13 @@ export function checkWorkbook (data: WorkbookData): Issue[] {
   }
 
   // --- engagements
+  // besides plages, an engagement may name a function without plage
+  const fonctionsEntieres = new Set(
+    fonctionsSansPlage(
+      data.plages.map(pl => [pl.date, pl.fonction, pl.debut, pl.fin, pl.nombre, pl.libelle]),
+      data.fonctions.map(f => f.nom)
+    )
+  )
   const couples = new Set<string>()
   for (const e of data.engagements) {
     if (e.personne === '' || e.plage === '') {
@@ -226,8 +234,8 @@ export function checkWorkbook (data: WorkbookData): Issue[] {
     if (!libelles.has(e.personne)) {
       erreur('engagements', e.row, `« ${e.personne} » ne correspond à aucune personne`)
     }
-    if (!plages.has(e.plage)) {
-      erreur('engagements', e.row, `« ${e.plage} » ne correspond à aucune plage`)
+    if (!plages.has(e.plage) && !fonctionsEntieres.has(e.plage)) {
+      erreur('engagements', e.row, `« ${e.plage} » ne correspond à aucune plage ni fonction sans plage`)
     }
     const couple = `${e.personne}\u0000${e.plage}`
     if (couples.has(couple)) {

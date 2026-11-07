@@ -108,6 +108,14 @@ describe('comparePlages', () => {
     expect(rows.sort(comparePlages).map(r => r[0])).toEqual([foreign, '04.12.2026'])
   })
 
+  it('orders plages of the same day and time by label', () => {
+    const rows = [
+      ['01.01.2021', 'supervision', '18:00', '', 1, '01.01.2021 | supervision'],
+      ['01.01.2021', 'bar', '18:00', '', 1, '01.01.2021 | bar']
+    ]
+    expect(rows.sort(comparePlages).map(r => r[1])).toEqual(['bar', 'supervision'])
+  })
+
   it('puts rows without a recognisable date last, in text order', () => {
     const rows = [row('b'), row('01.01.2021'), row('a')]
     expect(rows.sort(comparePlages).map(r => r[0])).toEqual([
@@ -188,5 +196,37 @@ describe('updatePlanning', () => {
 
     expect(planning.getMaxRows()).toBe(6)
     expect(planning.column(1)).toHaveLength(5)
+  })
+
+  it('gives a row to each function without plage, after the dated plages', () => {
+    const plages = new FakeSheet('plages', [
+      ['date', 'fonction', 'début', 'fin', 'nombre', 'libellé'],
+      ['', 'costumes', '', '', '', 'costumes'],
+      ['01.01.2021', 'bar', '20:00', '21:00', 1, '01.01.2021 | bar | 20:00-21:00']
+    ])
+    const fonctions = new FakeSheet('fonctions', [
+      ['nom', 'type'],
+      ['technique', ''],
+      ['bar', 'bénévole'],
+      ['costumes', ''],
+      ['coiffure', '']
+    ])
+    const engagements = new FakeSheet('engagements', [
+      ['personne', 'plage'],
+      ['Marie Dupont', 'technique'],
+      ['Jean Martin', 'technique']
+    ])
+    const planning = new FakeSheet('planning', [['plage', 'personnes']])
+    installSpreadsheetApp([plages, fonctions, engagements, planning])
+
+    updatePlanning()
+
+    expect(planning.column(1)).toEqual([
+      '01.01.2021 | bar | 20:00-21:00',
+      'coiffure',
+      'costumes',
+      'technique'
+    ])
+    expect(planning.column(2)).toEqual(['?', '', '', 'Marie Dupont\nJean Martin'])
   })
 })

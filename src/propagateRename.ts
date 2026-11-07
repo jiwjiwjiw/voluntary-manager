@@ -54,3 +54,36 @@ export function applyRenames (
   if (changed > 0) range.setValues(output)
   return changed
 }
+
+/**
+ * Carries a renamed function over to `plages!B` and `engagements!B` (where
+ * a function without plage is named directly). A function name has no
+ * computed copy that would keep the old value, so the rename is taken from
+ * the edit itself: one cell of `fonctions!A` whose previous value is known.
+ * Skipped when the new name is already used by another function (the edit
+ * merges two functions: which references go where is not known).
+ */
+export function propagateFonctionRename (e: GoogleAppsScript.Events.SheetsOnEdit) {
+  const range = e.range
+  if (
+    range.getNumRows() !== 1 ||
+    range.getNumColumns() !== 1 ||
+    range.getColumn() !== 1 ||
+    range.getRow() < 2
+  ) {
+    return
+  }
+  const oldName = String(e.oldValue ?? '').trim()
+  const newName = String(e.value ?? '').trim()
+  if (oldName === '' || newName === '' || oldName === newName) return
+  const sheet = range.getSheet()
+  const names = sheet
+    .getRange('A2:A')
+    .getDisplayValues()
+    .map(row => row[0].trim())
+  if (names.filter(name => name === newName).length > 1) return
+  const spreadsheet = SpreadsheetApp.getActive()
+  const renames = new Map([[oldName, newName]])
+  applyRenames(spreadsheet.getSheetByName('plages'), 'B2:B', renames)
+  applyRenames(spreadsheet.getSheetByName('engagements'), 'B2:B', renames)
+}

@@ -137,4 +137,13 @@ describe('buildEmailData', () => {
     const data = buildEmailData(destinataires, [], [], fonctions, plages)
     expect(data.map(d => d.personData.nom)).toEqual(['B', 'A'])
   })
+
+  it('takes the role of a function engaged on directly, without plage', () => {
+    const destinataires = [['Bar', 'Ana', 'Ana Bar', 'ana@example.org', 'à envoyer']]
+    const engagements = [['Ana Bar', 'musicien']]
+    const [data] = buildEmailData(destinataires, engagements, [], fonctions, [])
+    expect(data.listeEngagements).toEqual(['musicien'])
+    expect(data.estArtiste).toBe(true)
+    expect(data.estBenevole).toBe(false)
+  })
 })
