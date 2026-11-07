@@ -34,7 +34,7 @@ function workbook (
   options: { rejects?: RegExp; locked?: boolean; quota?: number } = {}
 ) {
   const personnes = new FakeSheet('personnes', [
-    ['nom', 'prénom', 'prénom nom', 'email', 'statut'],
+    ['nom', 'prénom', 'prénom nom', 'email', 'statut', 'texte perso mail'],
     ['Dupont', 'Marie', 'Marie Dupont', 'marie@example.org', 'à envoyer'],
     ['Martin', 'Jean', 'Jean Martin', 'jean@example.org', 'envoyé'],
     ['Durand', 'Paul', 'Paul Durand', '', 'à envoyer'],
@@ -125,6 +125,31 @@ describe('sendEmails', () => {
         listeContreparties: []
       })
     })
+  })
+
+  it('sends the texte perso once: erased after the send, kept after a failure', () => {
+    const { sent, personnes, properties } = workbook(
+      [
+        new FakeSheet('modèle courriel', [
+          headers,
+          ['sujet', '', 'Pour %PRENOM%'],
+          ['paragraphe', 'a un texte perso', 'PS : %PERSO%']
+        ])
+      ],
+      { rejects: /luc/ }
+    )
+    personnes.cells[1][5] = 'Merci pour le gâteau !' // Marie Dupont
+    personnes.cells[8][5] = 'Bravo !' // Luc Noir, whose address is rejected
+
+    sendEmails('modèle courriel')
+
+    expect(sent[0].htmlBody).toContain('PS : Merci pour le gâteau !')
+    expect(personnes.cells[1][5]).toBe('')
+    expect(personnes.cells[8][5]).toBe('Bravo !')
+    // the same text written again is a new one
+    expect(JSON.parse(properties.empreintes)['Marie Dupont']).toBe(
+      empreinte({ listeEngagements: ['01.01.2021 | bar | 20:00-21:00'], listeContreparties: [] })
+    )
   })
 
   it('also sends to people flagged « à renvoyer »', () => {

@@ -48,7 +48,7 @@ La première ligne de chaque feuille est une ligne d'en-tête.
 
 | Feuille | Colonnes | Remarques |
 |---|---|---|
-| `personnes` | A nom, B prénom, **C « prénom nom »**, D email, E statut d'envoi, F texte perso mail | C est calculée. E vaut `à envoyer`, `envoyé`, `réception confirmée` ou `à renvoyer`. F, facultatif, est un texte propre à la personne, inséré par `%PERSO%` ; le script crée la colonne si son en-tête est vide. |
+| `personnes` | A nom, B prénom, **C « prénom nom »**, D email, E statut d'envoi, F texte perso mail | C est calculée. E vaut `à envoyer`, `envoyé`, `réception confirmée` ou `à renvoyer`. F, facultatif, est un texte propre à la personne, inséré par `%PERSO%` dans son prochain courriel puis effacé ; le script crée la colonne si son en-tête est vide. |
 | `plages` | A date, B fonction, C début, D fin, E nombre de personnes, **F libellé** | F est calculée : `date \| fonction \| début-fin`. |
 | `engagements` | A personne, B plage | A référence `personnes!C`, B référence `plages!F`. |
 | `contreparties` | A personne, B contrepartie, C remarque | A référence `personnes!C`. |
@@ -71,13 +71,15 @@ une trace, car les courriels envoyés par le script n'apparaissent pas dans le
 dossier « Envoyés » de Gmail).
 
 À chaque envoi, le script mémorise (dans les propriétés du document, hors des
-feuilles) ce que chaque personne a reçu : ses engagements, contreparties et
-texte perso. Si l'un d'eux change ensuite, y compris par un changement
+feuilles) ce que chaque personne a reçu : ses engagements et contreparties.
+Si l'un d'eux change ensuite, y compris par un changement
 d'horaire de plage, ou si un texte perso est écrit pour elle, le statut de la
 personne passe de `envoyé` ou `réception confirmée` à `à renvoyer`, et
-**Envoyer les emails** l'inclut dans le prochain envoi. Effacer le texte perso
-ne demande pas de nouvel envoi. Le texte perso reste dans la feuille après
-l'envoi : il figure aussi dans un éventuel renvoi tant qu'il n'est pas effacé.
+**Envoyer les emails** l'inclut dans le prochain envoi. Le texte perso ne
+sert qu'une fois : il est effacé de la feuille dès que le courriel qui le
+contient est parti (il reste en cas d'échec ou de report pour quota). Le
+réécrire, même à l'identique, demande donc un nouvel envoi ; l'effacer ne
+change pas le statut.
 
 Les libellés calculés (`personnes!C`, `plages!F`) servent de clés dans
 `engagements` et `contreparties`. Quand un nom ou une plage est modifié, le
