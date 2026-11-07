@@ -3,22 +3,43 @@ import { rowHasContent } from './sheets-tools/helpers'
 import { updateSynthese } from './synthese'
 
 /**
+ * True for a Date. Checked through its tag rather than `instanceof`, which
+ * fails for a Date created in another realm, such as one handed over by an
+ * Apps Script service.
+ */
+export function isDate (value: unknown): value is Date {
+  return Object.prototype.toString.call(value) === '[object Date]'
+}
+
+/**
+ * Timestamp of a date cell: a Date, or a text holding a day, a month and a
+ * year (`4.12.2026`, `04/12/26`, `jeu. 04.12.2026`…). NaN when no date can
+ * be read.
+ */
+export function dateInMs (value: unknown): number {
+  if (isDate(value)) return value.getTime()
+  const m = /(?:^|\D)(\d{1,2})\s*[./-]\s*(\d{1,2})\s*[./-]\s*(\d{4}|\d{2})(?!\d)/.exec(
+    String(value ?? '')
+  )
+  if (!m) return NaN
+  const day = +m[1]
+  const month = +m[2]
+  const year = m[3].length === 2 ? 2000 + +m[3] : +m[3]
+  if (month < 1 || month > 12 || day < 1 || day > 31) return NaN
+  return new Date(year, month - 1, day).getTime()
+}
+
+/**
  * Chronological sort key of a `plages` row ([date, fonction, début, fin, …]).
- * The date cell is a Date when Sheets recognised it, or a `jj.mm.aaaa` text;
- * anything else sorts after the dated rows, by its text. The start time
- * breaks ties between plages of the same day.
+ * The date cell is read with dateInMs(); a row without a readable date sorts
+ * after the dated rows, by its text. The start time breaks ties between
+ * plages of the same day.
  */
 export function plageSortKey (
   row: ReadonlyArray<any>
 ): [number, string, number, string] {
   const date = row[0]
-  let time = NaN
-  if (date instanceof Date) {
-    time = date.getTime()
-  } else {
-    const m = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(String(date).trim())
-    if (m) time = new Date(+m[3], +m[2] - 1, +m[1]).getTime()
-  }
+  const time = dateInMs(date)
   const debut = row[2]
   return [
     Number.isNaN(time) ? Infinity : time,
@@ -34,7 +55,7 @@ export function plageSortKey (
  * that such rows sort last by their text.
  */
 export function timeOfDayInMinutes (value: unknown): number {
-  if (value instanceof Date) return value.getHours() * 60 + value.getMinutes()
+  if (isDate(value)) return value.getHours() * 60 + value.getMinutes()
   const m = /^(\d{1,2})\s*[:hH]\s*(\d{0,2})(?::\d{2})?$/.exec(String(value).trim())
   if (!m) return Infinity
   return +m[1] * 60 + (m[2] === '' ? 0 : +m[2])
@@ -91,8 +112,16 @@ export function updatePlanning () {
   const planningSheet = spreadsheet.getSheetByName('planning')
   const plagesRange = plagesSheet?.getRange('A2:F')
   const engagementsRange = engagementsSheet?.getRange('A2:B')
+  // A date the raw value does not give (a text Sheets did not recognise)
+  // is read from the text shown in the cell, the one the labels use.
+  const displayedDates = plagesRange?.getDisplayValues().map(row => row[0])
   const plagesSorted = plagesRange
     ?.getValues()
+    .map((row, index) =>
+      Number.isNaN(dateInMs(row[0])) && displayedDates
+        ? [displayedDates[index], ...row.slice(1)]
+        : row
+    )
     .filter(rowHasContent)
     .sort(comparePlages)
   const plagesData = plagesSorted?.map(row => [row[4], row[5]]) // [nombre de personnes, libellé]

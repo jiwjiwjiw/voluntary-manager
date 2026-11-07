@@ -1,3 +1,4 @@
+import { runInNewContext } from 'node:vm'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { comparePlages, computePlanning, updatePlanning } from '../src/updatePlanning'
 import { FakeSheet, installSpreadsheetApp } from './fakeSpreadsheet'
@@ -81,6 +82,30 @@ describe('comparePlages', () => {
       '9h30',
       '14:00'
     ])
+  })
+
+  it('orders 25 November before 4 December whatever the spelling', () => {
+    const rows = [
+      row('04.12.2026'),
+      row('4.12.2026 '),
+      row('jeu. 03.12.2026'),
+      row('25/11/26'),
+      row(' 25.11.2026')
+    ]
+    expect(rows.sort(comparePlages).map(r => r[0])).toEqual([
+      '25/11/26',
+      ' 25.11.2026',
+      'jeu. 03.12.2026',
+      '04.12.2026',
+      '4.12.2026 '
+    ])
+  })
+
+  it('reads a Date that fails instanceof (created in another realm)', () => {
+    const foreign = runInNewContext('new Date(2026, 10, 25)')
+    expect(foreign instanceof Date).toBe(false)
+    const rows = [row('04.12.2026'), row(foreign)]
+    expect(rows.sort(comparePlages).map(r => r[0])).toEqual([foreign, '04.12.2026'])
   })
 
   it('puts rows without a recognisable date last, in text order', () => {
