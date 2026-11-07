@@ -1,3 +1,5 @@
+import { updateEngagementsValidation } from './cibles'
+
 /**
  * The labels of `personnes!C` and `plages!F` are the keys that `engagements`
  * and `contreparties` refer to. When a name or a plage is edited, its label
@@ -56,8 +58,9 @@ export function applyRenames (
 }
 
 /**
- * Carries a renamed function over to `plages!B` and `engagements!B` (where
- * a function without plage is named directly). A function name has no
+ * Carries a renamed function over to `plages!B` and, for a function without
+ * plage (named directly by engagements), to `engagements!B`. The engagements
+ * on the plages of a function follow their labels, renamed by updatePlages(). A function name has no
  * computed copy that would keep the old value, so the rename is taken from
  * the edit itself: one cell of `fonctions!A` whose previous value is known.
  * Skipped when the new name is already used by another function (the edit
@@ -84,6 +87,8 @@ export function propagateFonctionRename (e: GoogleAppsScript.Events.SheetsOnEdit
   if (names.filter(name => name === newName).length > 1) return
   const spreadsheet = SpreadsheetApp.getActive()
   const renames = new Map([[oldName, newName]])
-  applyRenames(spreadsheet.getSheetByName('plages'), 'B2:B', renames)
+  if (applyRenames(spreadsheet.getSheetByName('plages'), 'B2:B', renames) > 0) return
+  // engagements!B is a list of values: it must offer the new name first.
+  updateEngagementsValidation()
   applyRenames(spreadsheet.getSheetByName('engagements'), 'B2:B', renames)
 }

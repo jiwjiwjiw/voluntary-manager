@@ -1,3 +1,4 @@
+import { updateEngagementsValidation } from './cibles'
 import { applyRenames, computeRenames } from './propagateRename'
 
 /**
@@ -38,5 +39,9 @@ export function updatePlages () {
   plagesSheet.getRange('F2:F').setValues(newLabels.map(label => [label]))
 
   const renames = computeRenames(oldLabels, newLabels)
+  if (renames.size === 0) return
+  // engagements!B is a list of values: it must offer the new labels before
+  // they are written, or the write is rejected.
+  updateEngagementsValidation()
   applyRenames(spreadsheet.getSheetByName('engagements'), 'B2:B', renames)
 }
