@@ -106,7 +106,11 @@ describe('checkWorkbook', () => {
 
   it('checks the functions and their use in plages', () => {
     const data = sane()
-    data.fonctions.push({ row: 3, nom: 'caisse', type: 'autre' }, { row: 4, nom: '', type: '' })
+    data.fonctions.push(
+      { row: 3, nom: 'caisse', type: 'autre' },
+      { row: 4, nom: '', type: 'bénévole' },
+      { row: 5, nom: 'costumes', type: '' }
+    )
     data.plages.push(plage(3, '01.01.2021', 'accueil', '', '', '1'))
     expect(messages(data, 'erreur')).toEqual([
       'fonctions:3 caisse : type « autre » inconnu (artiste ou bénévole)',
@@ -128,9 +132,8 @@ describe('checkWorkbook', () => {
     )
     expect(messages(data, 'erreur')).toEqual([
       'plages:3 01.01.2021 | bar | 20:00-21:00 : plage en double',
-      'plages:4 05.01.2021 | bar | 21:00-20:00 : nombre de personnes manquant ou invalide',
-      'plages:5 bar : date manquante',
-      'plages:5 bar : nombre de personnes manquant ou invalide'
+      'plages:4 05.01.2021 | bar | 21:00-20:00 : nombre de personnes invalide « 0 »',
+      'plages:5 bar : nombre de personnes invalide « deux »'
     ])
     expect(messages(data, 'avertissement')).toEqual([
       'plages:2 01.01.2021 | bar | 20:00-21:00 : 3 personnes engagées pour 2 places',
@@ -158,12 +161,20 @@ describe('checkWorkbook', () => {
       'engagements:3 « Jean Martin » ne correspond à aucune personne',
       'engagements:3 « 02.01.2021 | caisse » ne correspond à aucune plage',
       'engagements:4 personne ou plage manquante',
-      'contreparties:3 « Jean Martin » ne correspond à aucune personne',
-      'contreparties:5 personne manquante'
+      'contreparties:3 « Jean Martin » ne correspond à aucune personne'
     ])
     expect(messages(data, 'avertissement')).toEqual([
       'contreparties:4 contrepartie vide'
     ])
+  })
+
+  it('accepts functions without type, plages for a whole function, codes not handed out', () => {
+    const data = sane()
+    data.fonctions.push({ row: 3, nom: 'costumes', type: '' })
+    data.plages.push(plage(3, '', 'costumes', '', '', ''))
+    data.engagements.push({ row: 3, personne: 'Marie Dupont', plage: 'costumes' })
+    data.contreparties.push({ row: 3, personne: '', contrepartie: 'CODE-1234' })
+    expect(checkWorkbook(data)).toEqual([])
   })
 
   it('does not require the dates sheet to be filled', () => {

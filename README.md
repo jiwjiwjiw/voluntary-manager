@@ -18,8 +18,8 @@ Dans le classeur, un menu **Actions** propose :
 - **Recalculer** : refait le calcul complet à la main.
 - **Vérifier le classeur** : liste, feuille et ligne à l'appui, ce qui
   fausserait l'envoi ou le planning : feuilles manquantes, noms incomplets,
-  homonymes, adresses manquantes ou invalides, fonctions inconnues, plages en
-  double ou sans nombre de places, dates absentes de `dates`, heures
+  homonymes, adresses manquantes ou invalides, fonctions inconnues ou de type
+  inconnu, plages en double ou au nombre de places invalide, dates absentes de `dates`, heures
   incohérentes, plages sur-remplies, engagements ou contreparties vers une
   personne ou une plage inexistante, engagements en double, personnes sans
   engagement.
@@ -49,10 +49,10 @@ La première ligne de chaque feuille est une ligne d'en-tête.
 | Feuille | Colonnes | Remarques |
 |---|---|---|
 | `personnes` | A nom, B prénom, **C « prénom nom »**, D email, E statut d'envoi, F texte perso mail | C est calculée. E vaut `à envoyer`, `envoyé`, `réception confirmée` ou `à renvoyer`. F, facultatif, est un texte propre à la personne, inséré par `%PERSO%` dans son prochain courriel puis effacé ; le script crée la colonne si son en-tête est vide. |
-| `plages` | A date, B fonction, C début, D fin, E nombre de personnes, **F libellé** | F est calculée : `date \| fonction \| début-fin`. |
+| `plages` | A date, B fonction, C début, D fin, E nombre de personnes, **F libellé** | F est calculée : `date \| fonction \| début-fin`. Une plage sans date ni nombre représente une fonction entière (costumes, technique…) : son libellé est le nom de la fonction, sans place vacante. |
 | `engagements` | A personne, B plage | A référence `personnes!C`, B référence `plages!F`. |
-| `contreparties` | A personne, B contrepartie, C remarque | A référence `personnes!C`. |
-| `fonctions` | A nom, B type | B vaut `artiste` ou `bénévole`. |
+| `contreparties` | A personne, B contrepartie, C remarque | A référence `personnes!C`, ou reste vide pour un code pas encore attribué. |
+| `fonctions` | A nom, B type | B vaut `artiste`, `bénévole` ou reste vide. |
 | `dates` | A date | Liste des dates autorisées pour `plages!A`. |
 | `planning` | **A plage, B personnes** | Feuille entièrement calculée, triée par date (chronologiquement, que la date soit une vraie date ou un texte `jj.mm.aaaa`) puis heure de début. `?` marque une place vacante. |
 | `planning personnes` | **A personne, B nombre de plages, C plages** | Feuille entièrement calculée, créée au besoin : les plages de chaque personne dans l'ordre chronologique. |

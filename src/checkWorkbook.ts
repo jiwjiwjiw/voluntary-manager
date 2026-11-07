@@ -166,7 +166,8 @@ export function checkWorkbook (data: WorkbookData): Issue[] {
       continue
     }
     fonctions.add(f.nom)
-    if (!TYPES_FONCTION.includes(lower(f.type))) {
+    // No type is fine: the function then makes nobody artiste or bénévole.
+    if (f.type !== '' && !TYPES_FONCTION.includes(lower(f.type))) {
       erreur('fonctions', f.row, `${f.nom} : type « ${f.type} » inconnu (artiste ou bénévole)`)
     }
   }
@@ -185,9 +186,9 @@ export function checkWorkbook (data: WorkbookData): Issue[] {
       }
       plages.set(pl.libelle, pl)
     }
-    if (pl.date === '') {
-      erreur('plages', pl.row, `${ref} : date manquante`)
-    } else if (data.dates.length > 0 && !data.dates.includes(pl.date)) {
+    // A plage without date nor number stands for a whole function (costumes,
+    // technique…): people are engaged on it, with no slot and no count.
+    if (pl.date !== '' && data.dates.length > 0 && !data.dates.includes(pl.date)) {
       avertissement('plages', pl.row, `${ref} : date absente de la feuille dates`)
     }
     if (pl.fonction === '') {
@@ -196,8 +197,10 @@ export function checkWorkbook (data: WorkbookData): Issue[] {
       erreur('plages', pl.row, `${ref} : fonction « ${pl.fonction} » absente de la feuille fonctions`)
     }
     const nombre = Number(pl.nombre)
-    if (pl.nombre === '' || !Number.isInteger(nombre) || nombre < 1) {
-      erreur('plages', pl.row, `${ref} : nombre de personnes manquant ou invalide`)
+    if (pl.nombre === '') {
+      // no count: no vacant place, no over-booking
+    } else if (!Number.isInteger(nombre) || nombre < 1) {
+      erreur('plages', pl.row, `${ref} : nombre de personnes invalide « ${pl.nombre} »`)
     } else {
       const engages = engagesParPlage.get(pl.libelle) ?? 0
       if (engages > nombre) {
@@ -235,9 +238,8 @@ export function checkWorkbook (data: WorkbookData): Issue[] {
 
   // --- contreparties
   for (const c of data.contreparties) {
-    if (c.personne === '') {
-      erreur('contreparties', c.row, 'personne manquante')
-    } else if (!libelles.has(c.personne)) {
+    // No person is fine: a code generated in advance, not handed out yet.
+    if (c.personne !== '' && !libelles.has(c.personne)) {
       erreur('contreparties', c.row, `« ${c.personne} » ne correspond à aucune personne`)
     }
     if (c.contrepartie === '') {
