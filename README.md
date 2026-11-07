@@ -38,7 +38,7 @@ Dans le classeur, un menu **Actions** propose :
   personne du classeur recevrait, ou l'un des six cas de test couvrant toutes
   les combinaisons de conditions du modèle.
 - **Tester les emails** : envoie réellement à l'utilisateur courant le cas de
-  test le plus complet (artiste et bénévole avec contreparties), pour vérifier
+  test le plus complet (artiste et bénévole avec contreparties et texte perso), pour vérifier
   l'envoi et le rendu dans un vrai client de messagerie.
 
 ## Feuilles attendues dans le classeur
@@ -48,7 +48,7 @@ La première ligne de chaque feuille est une ligne d'en-tête.
 
 | Feuille | Colonnes | Remarques |
 |---|---|---|
-| `personnes` | A nom, B prénom, **C « prénom nom »**, D email, E statut d'envoi | C est calculée. E vaut `à envoyer`, `envoyé`, `réception confirmée` ou `à renvoyer`. |
+| `personnes` | A nom, B prénom, **C « prénom nom »**, D email, E statut d'envoi, F texte perso mail | C est calculée. E vaut `à envoyer`, `envoyé`, `réception confirmée` ou `à renvoyer`. F, facultatif, est un texte propre à la personne, inséré par `%PERSO%` ; le script crée la colonne si son en-tête est vide. |
 | `plages` | A date, B fonction, C début, D fin, E nombre de personnes, **F libellé** | F est calculée : `date \| fonction \| début-fin`. |
 | `engagements` | A personne, B plage | A référence `personnes!C`, B référence `plages!F`. |
 | `contreparties` | A personne, B contrepartie, C remarque | A référence `personnes!C`. |
@@ -71,10 +71,13 @@ une trace, car les courriels envoyés par le script n'apparaissent pas dans le
 dossier « Envoyés » de Gmail).
 
 À chaque envoi, le script mémorise (dans les propriétés du document, hors des
-feuilles) ce que chaque personne a reçu : ses engagements et contreparties.
-Si l'un d'eux change ensuite, y compris par un changement d'horaire de plage,
-le statut de la personne passe de `envoyé` ou `réception confirmée` à
-`à renvoyer`, et **Envoyer les emails** l'inclut dans le prochain envoi.
+feuilles) ce que chaque personne a reçu : ses engagements, contreparties et
+texte perso. Si l'un d'eux change ensuite, y compris par un changement
+d'horaire de plage, ou si un texte perso est écrit pour elle, le statut de la
+personne passe de `envoyé` ou `réception confirmée` à `à renvoyer`, et
+**Envoyer les emails** l'inclut dans le prochain envoi. Effacer le texte perso
+ne demande pas de nouvel envoi. Le texte perso reste dans la feuille après
+l'envoi : il figure aussi dans un éventuel renvoi tant qu'il n'est pas effacé.
 
 Les libellés calculés (`personnes!C`, `plages!F`) servent de clés dans
 `engagements` et `contreparties`. Quand un nom ou une plage est modifié, le
@@ -87,9 +90,11 @@ Dans `modèle courriel`, la colonne A vaut `sujet`, `titre`, `sous-titre`,
 `paragraphe`, `élément de liste` ou `aucun`. La colonne B contient une
 condition d'inclusion (vide = toujours inclus) parmi : `a au moins un code`,
 `est artiste`, `est bénévole`, `est artiste et a au moins un code`,
-`est bénévole et a au moins un code`. La colonne C accepte du texte enrichi
-(gras, italique, liens…) et les marqueurs `%PRENOM%`, `%NOM%`, `%EMAIL%`,
-`%LISTE_ENGAGEMENTS%`, `%LISTE_CONTREPARTIES%`.
+`est bénévole et a au moins un code`, `a un texte perso`. La colonne C
+accepte du texte enrichi (gras, italique, liens…) et les marqueurs `%PRENOM%`,
+`%NOM%`, `%EMAIL%`, `%LISTE_ENGAGEMENTS%`, `%LISTE_CONTREPARTIES%` et
+`%PERSO%` (le texte perso, vide s'il n'y en a pas : la condition
+`a un texte perso` évite alors un paragraphe vide).
 
 ## Structure du dépôt
 
@@ -194,7 +199,7 @@ autant de recalculs que de personnes l'ayant fait.
 
 Les déclencheurs appellent `updateModels`. À l'ouverture et sur **Recalculer**,
 tout est recalculé. À chaque édition, seul ce qui dépend de la feuille modifiée
-l'est : `personnes` → colonne C, `plages` → colonne F, planning (avec
+l'est : `personnes` → colonne C et statuts, `plages` → colonne F, planning (avec
 `planning personnes` et `synthèse`) et statuts, `engagements` → planning et
 statuts, `contreparties` → statuts, `dates` → liste déroulante de `plages!A` ;
 les autres feuilles ne déclenchent rien. Les listes déroulantes de textes

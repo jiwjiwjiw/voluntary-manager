@@ -69,6 +69,30 @@ describe('rowsARenvoyer', () => {
     ])
     expect(rowsARenvoyer([unchanged, changed, neverSent, toSend], store)).toEqual([3])
   })
+
+  it('flags a sent person given a texte perso they did not receive', () => {
+    const base = person(2, 'envoyé', ['e'])
+    const avec = (texte: string, row = 2) => ({ ...person(row, 'envoyé', ['e']), textePerso: texte })
+    const sansTexte = new Map([['p2', empreinte(base)]])
+    const avecTexte = new Map([['p2', empreinte(avec('merci'))]])
+
+    expect(rowsARenvoyer([avec('merci')], sansTexte)).toEqual([2])
+    expect(rowsARenvoyer([avec('merci')], avecTexte)).toEqual([])
+    expect(rowsARenvoyer([avec('merci beaucoup')], avecTexte)).toEqual([2])
+    // erasing the text calls for no new mail
+    expect(rowsARenvoyer([base], avecTexte)).toEqual([])
+    // sent before fingerprints existed: a text is new to them
+    expect(rowsARenvoyer([avec('merci', 3)], new Map())).toEqual([3])
+    // never sent: « à envoyer » already covers it
+    expect(rowsARenvoyer([{ ...avec('merci'), statut: 'à envoyer' }], sansTexte)).toEqual([])
+  })
+
+  it('keeps the fingerprints recorded before the texte perso existed', () => {
+    const d = { listeEngagements: ['e'], listeContreparties: ['c'] }
+    expect(empreinte({ ...d, textePerso: '' })).toBe(empreinte(d))
+    expect(empreinte({ ...d, textePerso: ' ' })).toBe(empreinte(d))
+    expect(empreinte({ ...d, textePerso: 'x' })).toMatch(/^[0-9a-f]{8}:[0-9a-f]{8}$/)
+  })
 })
 
 describe('updateStatuts', () => {

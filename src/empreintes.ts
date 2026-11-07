@@ -1,8 +1,8 @@
 /**
  * Fingerprints of what each person was told in their last confirmation
- * mail. They let the script notice when the engagements or contreparties
- * of a person change after the mail went out, and flag the person
- * « à renvoyer ».
+ * mail. They let the script notice when the engagements, contreparties or
+ * texte perso of a person change after the mail went out, and flag the
+ * person « à renvoyer ».
  *
  * The fingerprints are kept in the document properties (invisible to the
  * users, shared by everybody who opens the workbook), keyed by the person's
@@ -12,6 +12,7 @@
 export interface Confirmable {
   listeEngagements: string[]
   listeContreparties: string[]
+  textePerso?: string
 }
 
 /** FNV-1a, 32 bits, as hex: short, stable, with no Apps Script dependency. */
@@ -24,13 +25,31 @@ function hash (text: string): string {
   return h.toString(16).padStart(8, '0')
 }
 
-/** Same engagements and contreparties, in any order, give the same value. */
+/**
+ * Same engagements and contreparties, in any order, give the same value.
+ * A texte perso adds a second part, `<listes>:<texte>`; without one, the
+ * value is the one recorded before the texte perso existed.
+ */
 export function empreinte (d: Confirmable): string {
   const parts = [
     ...[...d.listeEngagements].sort().map(x => `E:${x}`),
     ...[...d.listeContreparties].sort().map(x => `C:${x}`)
   ]
-  return hash(parts.join('\n'))
+  const perso = (d.textePerso ?? '').trim()
+  return hash(parts.join('\n')) + (perso === '' ? '' : `:${hash(perso)}`)
+}
+
+/**
+ * Whether a person needs a new mail, given the fingerprint of the last one
+ * (undefined when none was recorded): their engagements or contreparties
+ * changed, or a texte perso was written that they did not receive.
+ * Emptying the texte perso calls for no new mail.
+ */
+export function doitRenvoyer (envoyee: string | undefined, d: Confirmable): boolean {
+  const [listes, perso = ''] = empreinte(d).split(':')
+  if (envoyee === undefined) return perso !== ''
+  const [listesEnvoyees, persoEnvoye = ''] = envoyee.split(':')
+  return listes !== listesEnvoyees || (perso !== '' && perso !== persoEnvoye)
 }
 
 const PROPERTY_KEY = 'empreintes'

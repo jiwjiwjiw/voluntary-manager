@@ -57,7 +57,8 @@ const ALL_STEPS: UpdateStep[] = [
 
 /**
  * The recomputations an edit on the given sheet calls for:
- * - `personnes` feeds its own column C;
+ * - `personnes` feeds its own column C and, through the texte perso, what
+ *   people are told;
  * - `plages` feeds its own column F, the planning and, through the labels,
  *   what people were told;
  * - `engagements` feeds the planning and what people were told;
@@ -69,7 +70,7 @@ const ALL_STEPS: UpdateStep[] = [
 export function stepsForSheet (sheetName: string): UpdateStep[] {
   switch (sheetName) {
     case 'personnes':
-      return ['personnes']
+      return ['personnes', 'statuts']
     case 'plages':
       return ['plages', 'planning', 'statuts']
     case 'engagements':

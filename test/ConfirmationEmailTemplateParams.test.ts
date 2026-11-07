@@ -50,6 +50,12 @@ describe('insertData', () => {
     )
   })
 
+  it('inserts the texte perso escaped, with its line breaks, or nothing', () => {
+    const d = data({ textePerso: 'Merci <3\nà bientôt' })
+    expect(params.insertData('<p>%PERSO%</p>', d)).toBe('<p>Merci &lt;3<br>à bientôt</p>')
+    expect(params.insertData('<p>%PERSO%</p>', data())).toBe('<p></p>')
+  })
+
   it('inserts $ sequences of a value literally', () => {
     const d = data({ personData: { nom: 'a$&b', prenom: "c$'d", email: '' } })
     expect(params.insertData('[%NOM%][%PRENOM%]', d)).toBe("[a$&amp;b][c$&#39;d]")
@@ -114,7 +120,14 @@ describe('evaluateCondition', () => {
       'est artiste',
       'est bénévole',
       'est artiste et a au moins un code',
-      'est bénévole et a au moins un code'
+      'est bénévole et a au moins un code',
+      'a un texte perso'
     ])
+  })
+
+  it('includes « a un texte perso » blocks only for a non-empty texte perso', () => {
+    expect(params.evaluateCondition('a un texte perso', data())).toBe(false)
+    expect(params.evaluateCondition('a un texte perso', data({ textePerso: '' }))).toBe(false)
+    expect(params.evaluateCondition('a un texte perso', data({ textePerso: 'merci' }))).toBe(true)
   })
 })

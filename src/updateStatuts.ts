@@ -1,11 +1,12 @@
 import { ConfirmationEmailData } from './ConfirmationEmailTemplateParams'
-import { empreinte, EmpreintesStore } from './empreintes'
+import { doitRenvoyer, EmpreintesStore } from './empreintes'
 import { collectData, STATUS_COLUMN } from './sendEmails'
 import { estEnvoye, STATUT_A_RENVOYER } from './statuts'
 
 /**
  * The rows of people who were sent a confirmation and whose engagements or
- * contreparties have changed since: they need a new mail.
+ * contreparties have changed since, or who were given a new texte perso:
+ * they need a new mail.
  */
 export function rowsARenvoyer (
   data: ReadonlyArray<ConfirmationEmailData & { statut?: string }>,
@@ -14,8 +15,7 @@ export function rowsARenvoyer (
   const rows: number[] = []
   for (const d of data) {
     if (d.row === undefined || d.libelle === '' || !estEnvoye(d.statut)) continue
-    const envoyee = store.get(d.libelle)
-    if (envoyee !== undefined && envoyee !== empreinte(d)) rows.push(d.row)
+    if (doitRenvoyer(store.get(d.libelle), d)) rows.push(d.row)
   }
   return rows
 }
