@@ -13,6 +13,7 @@ import {
 } from '../src/sendEmails'
 import { ConfirmationEmailData } from '../src/ConfirmationEmailTemplateParams'
 import {
+  FakeRichText,
   FakeSheet,
   installHtmlService,
   installLockService,
@@ -180,6 +181,29 @@ describe('sendEmails', () => {
       "<p><span style=''>Bonjour Marie,</span></p><ul><li><span style=''>a &amp; b</span></li></ul>"
     )
     expect(sent[0].body).toBe('Bonjour Marie,\n- a & b')
+  })
+
+  it('sends the lists in the font of the template text', () => {
+    const { sent } = workbook([
+      new FakeSheet('modèle courriel', [
+        headers,
+        ['sujet', '', 'Pour %PRENOM%'],
+        [
+          'paragraphe',
+          '',
+          new FakeRichText('Vos engagements : %LISTE_ENGAGEMENTS%', {
+            fontFamily: 'Calibri',
+            fontSize: 11
+          })
+        ]
+      ])
+    ])
+
+    sendEmails('modèle courriel')
+
+    expect(sent[0].htmlBody).toContain(
+      '<ul style="font-family:Calibri;font-size:11pt"><li>01.01.2021 | bar | 20:00-21:00</li></ul>'
+    )
   })
 
   it('uses the template sheet it is given', () => {

@@ -99,7 +99,9 @@ condition d'inclusion (vide = toujours inclus) parmi : `a au moins un code`,
 accepte du texte enrichi (gras, italique, liens…) et les marqueurs `%PRENOM%`,
 `%NOM%`, `%EMAIL%`, `%LISTE_ENGAGEMENTS%`, `%LISTE_CONTREPARTIES%` et
 `%PERSO%` (le texte perso, vide s'il n'y en a pas : la condition
-`a un texte perso` évite alors un paragraphe vide).
+`a un texte perso` évite alors un paragraphe vide). Les listes insérées par
+`%LISTE_ENGAGEMENTS%` et `%LISTE_CONTREPARTIES%` prennent la police, la
+taille et la couleur du texte dans lequel le marqueur est écrit.
 
 ## Structure du dépôt
 

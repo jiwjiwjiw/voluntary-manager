@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   ConfirmationEmailData,
-  ConfirmationEmailTemplateParams
+  ConfirmationEmailTemplateParams,
+  enclosingStyle
 } from '../src/ConfirmationEmailTemplateParams'
 
 const params = new ConfirmationEmailTemplateParams()
@@ -54,6 +55,27 @@ describe('insertData', () => {
     const d = data({ textePerso: 'Merci <3\nà bientôt' })
     expect(params.insertData('<p>%PERSO%</p>', d)).toBe('<p>Merci &lt;3<br>à bientôt</p>')
     expect(params.insertData('<p>%PERSO%</p>', data())).toBe('<p></p>')
+  })
+
+  it('gives a list the style of the text its marker is written in', () => {
+    const css = 'font-family:Arial;font-size:10pt'
+    const html = `<p><span style='${css}'>Vos engagements : %LISTE_ENGAGEMENTS%</span></p>`
+    expect(params.insertData(html, data())).toBe(
+      `<p><span style='${css}'>Vos engagements : ` +
+        `<ul style="${css}"><li>01.01.2021 | bar | 20:00-21:00</li></ul></span></p>`
+    )
+  })
+
+  it('leaves a list unstyled outside any styled text', () => {
+    expect(params.insertData("<span style='color:red'>x</span>%LISTE_CONTREPARTIES%", data())).toBe(
+      "<span style='color:red'>x</span><ul></ul>"
+    )
+  })
+
+  it('does not substitute a marker found in an inserted value', () => {
+    expect(params.insertData('%PERSO% %PRENOM%', data({ textePerso: 'cher %NOM%' }))).toBe(
+      'cher %NOM% Marie'
+    )
   })
 
   it('inserts $ sequences of a value literally', () => {
@@ -129,5 +151,15 @@ describe('evaluateCondition', () => {
     expect(params.evaluateCondition('a un texte perso', data())).toBe(false)
     expect(params.evaluateCondition('a un texte perso', data({ textePerso: '' }))).toBe(false)
     expect(params.evaluateCondition('a un texte perso', data({ textePerso: 'merci' }))).toBe(true)
+  })
+})
+
+describe('enclosingStyle', () => {
+  it('reads the style of the span around a position, and only that one', () => {
+    const html = "<span style='a:1'>xx</span>yy<span style='b:2'>zz</span>"
+    expect(enclosingStyle(html, html.indexOf('xx'))).toBe('a:1')
+    expect(enclosingStyle(html, html.indexOf('yy'))).toBe('')
+    expect(enclosingStyle(html, html.indexOf('zz'))).toBe('b:2')
+    expect(enclosingStyle('plain', 2)).toBe('')
   })
 })
