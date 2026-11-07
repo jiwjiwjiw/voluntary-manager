@@ -1,3 +1,4 @@
+import { fonctionsSansPlage } from './cibles'
 import { updatePlanningPersonnes } from './planningPersonnes'
 import { rowHasContent } from './sheets-tools/helpers'
 import { updateSynthese } from './synthese'
@@ -33,11 +34,12 @@ export function dateInMs (value: unknown): number {
  * Chronological sort key of a `plages` row ([date, fonction, début, fin, …]).
  * The date cell is read with dateInMs(); a row without a readable date sorts
  * after the dated rows, by its text. The start time breaks ties between
- * plages of the same day.
+ * plages of the same day, the label those of the same time (and orders the
+ * plages without date).
  */
 export function plageSortKey (
   row: ReadonlyArray<any>
-): [number, string, number, string] {
+): [number, string, number, string, string] {
   const date = row[0]
   const time = dateInMs(date)
   const debut = row[2]
@@ -45,7 +47,8 @@ export function plageSortKey (
     Number.isNaN(time) ? Infinity : time,
     String(date),
     timeOfDayInMinutes(debut),
-    String(debut)
+    String(debut),
+    String(row[5] ?? '')
   ]
 }
 
@@ -115,7 +118,7 @@ export function updatePlanning () {
   // A date the raw value does not give (a text Sheets did not recognise)
   // is read from the text shown in the cell, the one the labels use.
   const displayedDates = plagesRange?.getDisplayValues().map(row => row[0])
-  const plagesSorted = plagesRange
+  const plagesRows = plagesRange
     ?.getValues()
     .map((row, index) =>
       Number.isNaN(dateInMs(row[0])) && displayedDates
@@ -123,6 +126,18 @@ export function updatePlanning () {
         : row
     )
     .filter(rowHasContent)
+  // A function without plage gets a row of its own, like a plage without
+  // date nor number: its name is the label engagements refer to.
+  const fonctions =
+    spreadsheet
+      .getSheetByName('fonctions')
+      ?.getRange('A2:A')
+      .getDisplayValues()
+      .map(row => row[0]) ?? []
+  const plagesSorted = plagesRows
+    ?.concat(
+      fonctionsSansPlage(plagesRows, fonctions).map(nom => ['', nom, '', '', '', nom])
+    )
     .sort(comparePlages)
   const plagesData = plagesSorted?.map(row => [row[4], row[5]]) // [nombre de personnes, libellé]
   const engagementsData = engagementsRange?.getValues().filter(rowHasContent)

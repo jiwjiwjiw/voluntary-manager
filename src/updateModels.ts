@@ -1,5 +1,7 @@
+import { engagementsValidation, updateEngagementsValidation } from './cibles'
 import { ConfirmationEmailTemplateParams } from './ConfirmationEmailTemplateParams'
 import { EmailTemplateList } from './EmailTemplateList'
+import { propagateFonctionRename } from './propagateRename'
 import { EmailTemplate } from './sheets-tools/EmailTemplate'
 import { Validation } from './sheets-tools/Validation'
 import { ValidationHandler } from './sheets-tools/ValidationHandler'
@@ -24,7 +26,7 @@ export function updateValidation () {
   validationHandler.add(
     new Validation('engagements', 'A2:A', 'personnes', 'C2:C')
   )
-  validationHandler.add(new Validation('engagements', 'B2:B', 'plages', 'F2:F'))
+  validationHandler.add(engagementsValidation(SpreadsheetApp.getActive()))
   validationHandler.add(
     new Validation('fonctions', 'B2:B', '', '', false, ['artiste', 'bénévole'])
   )
@@ -41,12 +43,15 @@ export function updateValidation () {
 }
 
 export type UpdateStep =
+  | 'fonctions'
   | 'personnes'
   | 'plages'
   | 'planning'
   | 'statuts'
+  | 'cibles'
   | 'validation'
 
+// 'fonctions' needs the edit event; 'validation' includes 'cibles'.
 const ALL_STEPS: UpdateStep[] = [
   'personnes',
   'plages',
@@ -59,24 +64,29 @@ const ALL_STEPS: UpdateStep[] = [
  * The recomputations an edit on the given sheet calls for:
  * - `personnes` feeds its own column C and, through the texte perso, what
  *   people are told;
- * - `plages` feeds its own column F, the planning and, through the labels,
- *   what people were told;
+ * - `plages` feeds its own column F, the planning, through the labels what
+ *   people were told, and the dropdown of `engagements!B`;
  * - `engagements` feeds the planning and what people were told;
  * - `contreparties` feeds what people were told;
+ * - `fonctions` feeds, through a renamed function, `plages!B` and
+ *   `engagements!B`, hence everything `plages` feeds; and through the
+ *   functions without plage, the planning and the dropdown of `engagements!B`;
  * - `dates` feeds the dropdown of `plages!A`, a list of display values since
  *   a rule referencing a range of dates rejects the picked date;
- * - the other sheets feed nothing (dropdowns reference their ranges).
+ * - the other sheets feed nothing (the other dropdowns reference their ranges).
  */
 export function stepsForSheet (sheetName: string): UpdateStep[] {
   switch (sheetName) {
     case 'personnes':
       return ['personnes', 'statuts']
     case 'plages':
-      return ['plages', 'planning', 'statuts']
+      return ['plages', 'planning', 'statuts', 'cibles']
     case 'engagements':
       return ['planning', 'statuts']
     case 'contreparties':
       return ['statuts']
+    case 'fonctions':
+      return ['fonctions', 'plages', 'planning', 'statuts', 'cibles']
     case 'dates':
       return ['validation']
     default:
@@ -113,10 +123,12 @@ export function updateModels (e?: TriggerEvent) {
     return
   }
   try {
+    if (steps.includes('fonctions') && e && 'range' in e) propagateFonctionRename(e)
     if (steps.includes('personnes')) updatePersonnes()
     if (steps.includes('plages')) updatePlages()
     if (steps.includes('planning')) updatePlanning()
     if (steps.includes('statuts')) updateStatuts()
+    if (steps.includes('cibles')) updateEngagementsValidation()
     if (steps.includes('validation')) updateValidation()
   } finally {
     lock.releaseLock()

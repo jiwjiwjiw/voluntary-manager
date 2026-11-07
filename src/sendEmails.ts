@@ -407,11 +407,12 @@ const sameText = (a: unknown, b: string) =>
  * plages has a function of type `artiste` (resp. `bénévole`). The function
  * of a plage is looked up in `plages` by label, so a function name that is
  * part of another one (bar / barman) or that appears in a date or a name
- * cannot cause a false match.
+ * cannot cause a false match. An engagement on a function without plage
+ * names the function itself.
  *
  * @param destinataires rows of `personnes!A:F` to send to: [nom, prénom, « prénom nom », email, statut,
  *   texte perso]; a seventh element, when present, is the sheet row number
- * @param engagements rows of `engagements!A:B`: [personne, libellé de plage]
+ * @param engagements rows of `engagements!A:B`: [personne, libellé de plage ou fonction]
  * @param contreparties rows of `contreparties!A:C`: [personne, contrepartie, remarque]
  * @param fonctions rows of `fonctions!A:B`: [nom, type] with type `artiste` or `bénévole`
  * @param plages rows of `plages!A:F`: [date, fonction, début, fin, nombre, libellé]
@@ -432,6 +433,10 @@ export function buildEmailData (
   const fonctionDePlage = new Map<string, string>(
     plages.map(row => [row[5], row[1]])
   )
+  // An engagement may also name a function without plage directly.
+  for (const [nom] of fonctions) {
+    if (!fonctionDePlage.has(nom)) fonctionDePlage.set(nom, nom)
+  }
   const aUneFonctionParmi = (listeEngagements: string[], noms: string[]) =>
     listeEngagements.some(label => {
       const fonction = fonctionDePlage.get(label)

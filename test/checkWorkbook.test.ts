@@ -159,7 +159,7 @@ describe('checkWorkbook', () => {
     )
     expect(messages(data, 'erreur')).toEqual([
       'engagements:3 « Jean Martin » ne correspond à aucune personne',
-      'engagements:3 « 02.01.2021 | caisse » ne correspond à aucune plage',
+      'engagements:3 « 02.01.2021 | caisse » ne correspond à aucune plage ni fonction sans plage',
       'engagements:4 personne ou plage manquante',
       'contreparties:3 « Jean Martin » ne correspond à aucune personne'
     ])
@@ -175,6 +175,18 @@ describe('checkWorkbook', () => {
     data.engagements.push({ row: 3, personne: 'Marie Dupont', plage: 'costumes' })
     data.contreparties.push({ row: 3, personne: '', contrepartie: 'CODE-1234' })
     expect(checkWorkbook(data)).toEqual([])
+  })
+
+  it('accepts an engagement on a function without plage, not on one with plages', () => {
+    const data = sane()
+    data.fonctions.push({ row: 3, nom: 'technique', type: '' })
+    data.engagements.push(
+      { row: 3, personne: 'Marie Dupont', plage: 'technique' },
+      { row: 4, personne: 'Marie Dupont', plage: 'bar' }
+    )
+    expect(messages(data)).toEqual([
+      'engagements:4 « bar » ne correspond à aucune plage ni fonction sans plage'
+    ])
   })
 
   it('does not require the dates sheet to be filled', () => {

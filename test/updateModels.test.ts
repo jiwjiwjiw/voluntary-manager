@@ -38,7 +38,8 @@ const changeOf = (changeType: string) => ({ changeType }) as any
 describe('stepsForSheet', () => {
   it('maps each source sheet to what it feeds', () => {
     expect(stepsForSheet('personnes')).toEqual(['personnes', 'statuts'])
-    expect(stepsForSheet('plages')).toEqual(['plages', 'planning', 'statuts'])
+    expect(stepsForSheet('plages')).toEqual(['plages', 'planning', 'statuts', 'cibles'])
+    expect(stepsForSheet('fonctions')).toEqual(['fonctions', 'plages', 'planning', 'statuts', 'cibles'])
     expect(stepsForSheet('engagements')).toEqual(['planning', 'statuts'])
     expect(stepsForSheet('contreparties')).toEqual(['statuts'])
     expect(stepsForSheet('planning')).toEqual([])
@@ -48,6 +49,37 @@ describe('stepsForSheet', () => {
 })
 
 describe('updateModels', () => {
+  it('carries a renamed function over to plages, their labels and engagements', () => {
+    const { plages, engagements, sheets } = workbook()
+    const fonctions = sheets.find(s => s.getName() === 'fonctions')!
+    fonctions.cells.push(['technique', ''])
+    engagements.cells.push(
+      ['Marie Dupont', 'technique'],
+      ['Marie Dupont', '01.01.2021 | bar | 20:00-21:00']
+    )
+    plages.cells[1][5] = '01.01.2021 | bar | 20:00-21:00'
+
+    fonctions.cells[1][0] = 'buvette'
+    updateModels({ range: fonctions.getRange('A2'), oldValue: 'bar', value: 'buvette' } as any)
+    fonctions.cells[2][0] = 'régie'
+    updateModels({ range: fonctions.getRange('A3'), oldValue: 'technique', value: 'régie' } as any)
+
+    expect(plages.cells[1][1]).toBe('buvette')
+    expect(plages.cells[1][5]).toBe('01.01.2021 | buvette | 20:00-21:00')
+    expect(engagements.column(2)).toEqual(['régie', '01.01.2021 | buvette | 20:00-21:00'])
+  })
+
+  it('does not merge two functions renamed into one', () => {
+    const { plages, sheets } = workbook()
+    const fonctions = sheets.find(s => s.getName() === 'fonctions')!
+    fonctions.cells.push(['caisse', 'bénévole'])
+
+    fonctions.cells[1][0] = 'caisse'
+    updateModels({ range: fonctions.getRange('A2'), oldValue: 'bar', value: 'caisse' } as any)
+
+    expect(plages.cells[1][1]).toBe('bar')
+  })
+
   it('recomputes everything without an event', () => {
     const { personnes, plages, planning, modele, sheets, lock } = workbook()
 

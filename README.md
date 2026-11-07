@@ -21,7 +21,7 @@ Dans le classeur, un menu **Actions** propose :
   homonymes, adresses manquantes ou invalides, fonctions inconnues ou de type
   inconnu, plages en double ou au nombre de places invalide, dates absentes de `dates`, heures
   incohérentes, plages sur-remplies, engagements ou contreparties vers une
-  personne ou une plage inexistante, engagements en double, personnes sans
+  personne, une plage ou une fonction sans plage inexistante, engagements en double, personnes sans
   engagement.
 - **Envoyer les emails** : ouvre un dialogue qui annonce le nombre de
   courriels à envoyer (statuts `à envoyer` et `à renvoyer`), les personnes qui ne recevront
@@ -49,12 +49,12 @@ La première ligne de chaque feuille est une ligne d'en-tête.
 | Feuille | Colonnes | Remarques |
 |---|---|---|
 | `personnes` | A nom, B prénom, **C « prénom nom »**, D email, E statut d'envoi, F texte perso mail | C est calculée. E vaut `à envoyer`, `envoyé`, `réception confirmée` ou `à renvoyer`. F, facultatif, est un texte propre à la personne, inséré par `%PERSO%` dans son prochain courriel puis effacé ; le script crée la colonne si son en-tête est vide. |
-| `plages` | A date, B fonction, C début, D fin, E nombre de personnes, **F libellé** | F est calculée : `date \| fonction \| début-fin`. Une plage sans date ni nombre représente une fonction entière (costumes, technique…) : son libellé est le nom de la fonction, sans place vacante. |
-| `engagements` | A personne, B plage | A référence `personnes!C`, B référence `plages!F`. |
+| `plages` | A date, B fonction, C début, D fin, E nombre de personnes, **F libellé** | F est calculée : `date \| fonction \| début-fin`. Date et nombre sont facultatifs ; une plage sans nombre n'a pas de place vacante. |
+| `engagements` | A personne, B plage ou fonction | A référence `personnes!C`. B référence `plages!F`, ou le nom d'une fonction qui n'a aucune plage (costumes, technique…), pour un engagement sur la fonction entière, sans horaire ni nombre. |
 | `contreparties` | A personne, B contrepartie, C remarque | A référence `personnes!C`, ou reste vide pour un code pas encore attribué. |
 | `fonctions` | A nom, B type | B vaut `artiste`, `bénévole` ou reste vide. |
 | `dates` | A date | Liste des dates autorisées pour `plages!A`. |
-| `planning` | **A plage, B personnes** | Feuille entièrement calculée, triée par date (chronologiquement, que la date soit une vraie date ou un texte `jj.mm.aaaa`) puis heure de début. `?` marque une place vacante. |
+| `planning` | **A plage, B personnes** | Feuille entièrement calculée, triée par date (chronologiquement, que la date soit une vraie date ou un texte `jj.mm.aaaa`) puis heure de début, suivie d'une ligne par fonction sans plage. `?` marque une place vacante. |
 | `planning personnes` | **A personne, B nombre de plages, C plages** | Feuille entièrement calculée, créée au besoin : les plages de chaque personne dans l'ordre chronologique. |
 | `synthèse` | **A date ou fonction, B places, C pourvues, D vacantes, E taux** | Feuille entièrement calculée, créée au besoin : remplissage par date (ordre chronologique) puis par fonction (ordre alphabétique), avec un total par tableau. |
 | `modèle courriel` | A type, B condition, C texte | Modèle du courriel, une ligne par bloc. |
@@ -86,7 +86,10 @@ Les libellés calculés (`personnes!C`, `plages!F`) servent de clés dans
 script reporte le nouveau libellé dans ces références. Il s'abstient quand
 c'est ambigu (deux lignes portaient le même ancien libellé, ou le nouveau
 libellé existait déjà sur une autre ligne) ; **Vérifier le classeur** signale
-alors les références orphelines.
+alors les références orphelines. De même, renommer une fonction (une cellule
+de `fonctions!A` modifiée à la main) reporte le nouveau nom dans `plages!B`
+et `engagements!B`, sauf si le nouveau nom est déjà celui d'une autre
+fonction.
 
 Dans `modèle courriel`, la colonne A vaut `sujet`, `titre`, `sous-titre`,
 `paragraphe`, `élément de liste` ou `aucun`. La colonne B contient une
@@ -110,7 +113,8 @@ src/
   config.ts                          lecture de la feuille config
   updatePersonnes.ts                 calcule personnes!C
   updatePlages.ts                    calcule plages!F
-  propagateRename.ts                 reporte un libellé modifié dans les références
+  propagateRename.ts                 reporte un libellé ou une fonction renommés dans les références
+  cibles.ts                          ce que engagements!B accepte : plages et fonctions sans plage
   updatePlanning.ts                  calcule la feuille planning
   planningPersonnes.ts               calcule la feuille planning personnes
   synthese.ts                        calcule la feuille synthèse (remplissage)
@@ -202,12 +206,15 @@ autant de recalculs que de personnes l'ayant fait.
 Les déclencheurs appellent `updateModels`. À l'ouverture et sur **Recalculer**,
 tout est recalculé. À chaque édition, seul ce qui dépend de la feuille modifiée
 l'est : `personnes` → colonne C et statuts, `plages` → colonne F, planning (avec
-`planning personnes` et `synthèse`) et statuts, `engagements` → planning et
-statuts, `contreparties` → statuts, `dates` → liste déroulante de `plages!A` ;
-les autres feuilles ne déclenchent rien. Les listes déroulantes de textes
-référencent directement leurs plages et se mettent à jour seules ; celle des
-dates est une liste de valeurs affichées, car Sheets refuse la date choisie
-dans un menu qui référence des cellules de type date.
+`planning personnes` et `synthèse`), statuts et liste déroulante de
+`engagements!B`, `fonctions` → report d'un renommage puis comme `plages`,
+`engagements` → planning et statuts, `contreparties` → statuts, `dates` →
+liste déroulante de `plages!A` ; les autres feuilles ne déclenchent rien. Les
+listes déroulantes de textes référencent directement leurs plages et se
+mettent à jour seules, sauf deux listes de valeurs que le script réécrit :
+celle des dates, car Sheets refuse la date choisie dans un menu qui référence
+des cellules de type date, et celle de `engagements!B`, qui réunit les plages
+et les fonctions sans plage (500 choix au plus).
 Un seul recalcul tourne à la fois (verrou sur le document).
 
 ## Licence
