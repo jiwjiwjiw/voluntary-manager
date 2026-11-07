@@ -374,8 +374,12 @@ function sendEmails2 (
       report.envoyes++
       if (d.row !== undefined) {
         personnesSheet?.getRange(d.row, STATUS_COLUMN).setValue(STATUT_ENVOYE)
+        // The texte perso is for one mail: once sent, it is erased.
+        if (d.textePerso) personnesSheet?.getRange(d.row, PERSO_COLUMN).setValue('')
         // Remember what was confirmed, to flag later changes « à renvoyer ».
-        store.set(d.libelle, empreinte(d))
+        // Without the erased text, so that any text written later, even the
+        // same one, calls for a new mail.
+        store.set(d.libelle, empreinte({ ...d, textePerso: '' }))
       }
     }
   } finally {
