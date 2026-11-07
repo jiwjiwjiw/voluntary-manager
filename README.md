@@ -54,7 +54,7 @@ La première ligne de chaque feuille est une ligne d'en-tête.
 | `contreparties` | A personne, B contrepartie, C remarque | A référence `personnes!C`. |
 | `fonctions` | A nom, B type | B vaut `artiste` ou `bénévole`. |
 | `dates` | A date | Liste des dates autorisées pour `plages!A`. |
-| `planning` | **A plage, B personnes** | Feuille entièrement calculée, triée par date puis heure de début. `?` marque une place vacante. |
+| `planning` | **A plage, B personnes** | Feuille entièrement calculée, triée par date (chronologiquement, que la date soit une vraie date ou un texte `jj.mm.aaaa`) puis heure de début. `?` marque une place vacante. |
 | `planning personnes` | **A personne, B nombre de plages, C plages** | Feuille entièrement calculée, créée au besoin : les plages de chaque personne dans l'ordre chronologique. |
 | `synthèse` | **A date ou fonction, B places, C pourvues, D vacantes, E taux** | Feuille entièrement calculée, créée au besoin : remplissage par date (ordre chronologique) puis par fonction (ordre alphabétique), avec un total par tableau. |
 | `modèle courriel` | A type, B condition, C texte | Modèle du courriel, une ligne par bloc. |
