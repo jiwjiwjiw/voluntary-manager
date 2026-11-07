@@ -46,7 +46,7 @@ export class ConfirmationEmailTemplateParams implements EmailTemplateParams {
    * a value are inserted literally (a string replacement would interpret
    * `$&`, `$'`…).
    *
-   * A list takes the style of the text its marker is written in: a <ul>
+   * A list takes the style of the text around it (see listStyle()): a <ul>
    * cannot stay inside the styled <span> of that text, mail clients move it
    * out, and it would otherwise show in their default font.
    */
@@ -65,7 +65,7 @@ export class ConfirmationEmailTemplateParams implements EmailTemplateParams {
     }
     const pattern = new RegExp(Object.keys(values).join('|'), 'g')
     return html.replace(pattern, (marker: string, offset: number) =>
-      values[marker](enclosingStyle(html, offset))
+      values[marker](listStyle(html, offset))
     )
   }
 
@@ -123,4 +123,23 @@ export function enclosingStyle (html: string, offset: number): string {
   const start = open + SPAN_OPEN.length
   const end = html.indexOf("'>", start)
   return end === -1 || end > offset ? '' : html.slice(start, end)
+}
+
+/**
+ * The style a list inserted at `offset` should take: that of the text its
+ * marker is written in, or, when the marker has no styled text around it (a
+ * row of type `aucun`, a title, a cell without explicit format), that of the
+ * nearest styled text before it, else after it; '' when the mail has none.
+ */
+export function listStyle (html: string, offset: number): string {
+  const own = enclosingStyle(html, offset)
+  if (own !== '') return own
+  let before = ''
+  let after = ''
+  for (const m of html.matchAll(/<span style='([^']*)'>/g)) {
+    if (m[1] === '') continue
+    if (m.index < offset) before = m[1]
+    else if (after === '') after = m[1]
+  }
+  return before || after
 }
